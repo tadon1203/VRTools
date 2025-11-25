@@ -1,0 +1,59 @@
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+# Taken from microsoft/STL
+
+BasedOnStyle: LLVM
+AccessModifierOffset: -4
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: Left
+AlignOperands: AlignAfterOperator
+AlignTrailingComments:
+  Kind: Never
+AllowBreakBeforeNoexceptSpecifier: OnlyWithParen
+AllowShortFunctionsOnASingleLine: All
+BreakAfterAttributes: Never
+BreakBeforeBinaryOperators: NonAssignment
+BreakTemplateDeclarations: Yes
+ColumnLimit: 120
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<(yvals|yvals_core)\.h>$'
+    Priority: 10
+  - Regex: '^<__msvc_.*\.hpp>$'
+    Priority: 20
+  - Regex: '^<initguid\.h>$' # <initguid.h> should be included before any header that includes <guiddef.h>
+    Priority: 30
+    SortPriority: 30
+  - Regex: '^<(DbgEng|DbgHelp|Shlwapi|Windows)\.h>$'
+    Priority: 30
+    SortPriority: 31
+  - Regex: '^<winioctl\.h>$'
+    Priority: 30
+    SortPriority: 32
+  - Regex: '\.hpp[>"]$'
+    Priority: 40
+  - Regex: '.*'
+    Priority: 20
+IndentCaseBlocks: true
+IndentWidth: 4
+IndentWrappedFunctionNames: true
+InsertBraces: true
+InsertNewlineAtEOF: true
+KeepEmptyLines:
+  AtStartOfFile: false
+LineEnding: CRLF
+MaxEmptyLinesToKeep: 2
+NamespaceIndentation: All
+FixNamespaceComments: false
+ShortNamespaceLines: 0
+PointerAlignment: Left
+RemoveSemicolon: true
+SpaceAfterCStyleCast: true
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterRequiresInClause: true
+BreakConstructorInitializers: BeforeComma
+Cpp11BracedListStyle: false
