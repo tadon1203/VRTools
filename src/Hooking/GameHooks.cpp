@@ -1,13 +1,13 @@
 #include "GameHooks.hpp"
 
 #include "Core/Logger.hpp"
-#include "Features/FeatureManager.hpp"
+#include "Features/Framework/FeatureManager.hpp"
 #include "Hooking/HookManager.hpp"
 #include "Input/InputManager.hpp"
+#include "SDK/Game/Photon/EventData.hpp"
+#include "SDK/Il2Cpp/Il2Cpp.hpp"
 #include "UI/NotificationManager.hpp"
 #include "Utils/PatternScan.hpp"
-#include "Wrappers/Il2Cpp/Il2Cpp.hpp"
-#include "Wrappers/Photon/EventData.hpp"
 
 void (*GameHooks::m_originalUpdate)(void*) = nullptr;
 

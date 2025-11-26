@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-#include "Wrappers/Il2Cpp/Structs.hpp"
-#include "Wrappers/Photon/SendOptions.hpp"
+#include "SDK/Game/Photon/SendOptions.hpp"
+#include "SDK/Il2Cpp/Structs.hpp"
 
 class GameHooks {
 public:

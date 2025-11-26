@@ -1,16 +1,16 @@
 #include "Core.hpp"
 
-#include "Features/FeatureManager.hpp"
-#include "Features/LogWindow.hpp"
-#include "Features/Menu.hpp"
+#include "Features/Framework/FeatureManager.hpp"
+#include "Features/Modules/System/LogWindow.hpp"
+#include "Features/Modules/System/Menu.hpp"
 #include "Hooking/GameHooks.hpp"
 #include "Hooking/HookManager.hpp"
 #include "Hooking/WndProcHook.hpp"
 #include "Input/InputManager.hpp"
 #include "Logger.hpp"
 #include "Rendering/Renderer.hpp"
+#include "SDK/Il2Cpp/Il2Cpp.hpp"
 #include "Settings/SettingsManager.hpp"
-#include "Wrappers/Il2Cpp/Il2Cpp.hpp"
 
 Core& Core::instance() {
     static Core inst;

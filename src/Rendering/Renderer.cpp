@@ -7,7 +7,7 @@
 #include <string>
 
 #include "Core/Logger.hpp"
-#include "Features/FeatureManager.hpp"
+#include "Features/Framework/FeatureManager.hpp"
 #include "Hooking/HookManager.hpp"
 #include "Hooking/WndProcHook.hpp"
 #include "UI/NotificationManager.hpp"

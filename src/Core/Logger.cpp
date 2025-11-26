@@ -4,6 +4,8 @@
 
 #include <Windows.h>
 
+#include "Core/Version.hpp"
+
 namespace fs = std::filesystem;
 
 Logger& Logger::instance() {
@@ -14,7 +16,7 @@ Logger& Logger::instance() {
 void Logger::initialize() {
     char exePath[MAX_PATH];
     GetModuleFileNameA(nullptr, exePath, MAX_PATH);
-    fs::path logDir = fs::path(exePath).parent_path() / "HitlerHack";
+    fs::path logDir = fs::path(exePath).parent_path() / Version::PROJECT_NAME;
     fs::create_directories(logDir);
 
     auto now   = std::chrono::system_clock::now();

@@ -6,13 +6,14 @@
 #include <Windows.h>
 
 #include "Core/Logger.hpp"
+#include "Core/Version.hpp"
 
 namespace fs = std::filesystem;
 
 fs::path getSettingsFilePath(const std::string& filename) {
     char exePath[MAX_PATH];
     GetModuleFileNameA(nullptr, exePath, MAX_PATH);
-    return fs::path(exePath).parent_path() / "HitlerHack" / filename;
+    return fs::path(exePath).parent_path() / Version::PROJECT_NAME / filename;
 }
 
 SettingsManager& SettingsManager::instance() {
