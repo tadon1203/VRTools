@@ -3,9 +3,11 @@
 #include "Core/Logger.hpp"
 #include "Features/Framework/FeatureManager.hpp"
 #include "Hooking/HookManager.hpp"
+#include "Input/CursorManager.hpp"
 #include "Input/InputManager.hpp"
 #include "SDK/Game/Photon/EventData.hpp"
 #include "SDK/Il2Cpp/Il2Cpp.hpp"
+#include "SDK/Unity/Cursor.hpp"
 #include "UI/NotificationManager.hpp"
 #include "Utils/PatternScan.hpp"
 
@@ -15,11 +17,15 @@ void (*GameHooks::m_originalOnEvent)(void*, void*) = nullptr;
 
 bool (*GameHooks::m_originalRaiseEvent)(uint8_t, Il2CppObject*, void* raiseEventOptions, Photon::SendOptions) = nullptr;
 
+void (*GameHooks::m_originalSetLockState)(UnityEngine::CursorLockMode) = nullptr;
+void (*GameHooks::m_originalSetVisible)(bool)                          = nullptr;
+
 void GameHooks::initialize() {
     try {
         setupMainLoopHook();
         setupNetworkEventHook();
         setupRaiseEventHook();
+        setupCursorHooks();
         Logger::instance().info("Game hooks initialized.");
     } catch (const std::exception& e) {
         Logger::instance().error("Failed to initialize game hooks: {}", e.what());
@@ -56,10 +62,32 @@ void GameHooks::setupRaiseEventHook() {
         "PhotonNetwork_RaiseEvent", reinterpret_cast<void*>(raiseEventAddress), &hookRaiseEvent, &m_originalRaiseEvent);
 }
 
+void GameHooks::setupCursorHooks() {
+    const MethodInfo* setLockStateMethod =
+        Il2Cpp::resolveMethod("UnityEngine.CoreModule.dll", "UnityEngine", "Cursor", "set_lockState", 1);
+    if (!setLockStateMethod) {
+        throw std::runtime_error("Failed to find Cursor::set_lockState.");
+    }
+
+    const MethodInfo* setVisibleMethod =
+        Il2Cpp::resolveMethod("UnityEngine.CoreModule.dll", "UnityEngine", "Cursor", "set_visible", 1);
+    if (!setVisibleMethod) {
+        throw std::runtime_error("Failed to find Cursor::set_visible.");
+    }
+
+    HookManager::instance().createHook(
+        "Cursor_set_lockState", setLockStateMethod->methodPointer, &hookSetLockState, &m_originalSetLockState);
+
+    HookManager::instance().createHook(
+        "Cursor_set_visible", setVisibleMethod->methodPointer, &hookSetVisible, &m_originalSetVisible);
+}
+
 void GameHooks::hookUpdate(void* instance) {
     InputManager::instance().update();
     FeatureManager::instance().updateAll();
     NotificationManager::instance().update();
+
+    CursorManager::instance().update();
 
     if (m_originalUpdate) {
         m_originalUpdate(instance);
@@ -89,4 +117,20 @@ bool GameHooks::hookRaiseEvent(
     }
 
     return false;
+}
+
+void GameHooks::hookSetLockState(UnityEngine::CursorLockMode value) {
+    CursorManager::instance().onSetLockState(value);
+
+    if (m_originalSetLockState) {
+        m_originalSetLockState(value);
+    }
+}
+
+void GameHooks::hookSetVisible(bool value) {
+    CursorManager::instance().onSetVisible(value);
+
+    if (m_originalSetVisible) {
+        m_originalSetVisible(value);
+    }
 }

@@ -7,6 +7,7 @@
 #include "Core/Version.hpp"
 #include "Features/Framework/FeatureManager.hpp"
 #include "Features/HUD/HUDManager.hpp"
+#include "Input/CursorManager.hpp"
 
 Menu::Menu()
     : IFeature(FeatureCategory::System, "Menu", VK_INSERT) {}
@@ -17,13 +18,22 @@ void Menu::initialize() {
         m_featuresByCategory[feature->getCategory()].push_back(feature.get());
     }
 
-    // Default selection logic
     if (!m_featuresByCategory.empty()) {
         m_selectedCategory = m_featuresByCategory.begin()->first;
         if (!m_featuresByCategory.begin()->second.empty()) {
             m_selectedFeature = m_featuresByCategory.begin()->second[0];
         }
     }
+}
+
+void Menu::onEnable() {
+    IFeature::onEnable();
+    CursorManager::instance().setUnlock(true);
+}
+
+void Menu::onDisable() {
+    IFeature::onDisable();
+    CursorManager::instance().setUnlock(false);
 }
 
 void Menu::onMenuRender() {
@@ -51,7 +61,7 @@ void Menu::onRender() {
     }
 
     ImGui::SetNextWindowSize(ImVec2(700, 500), ImGuiCond_Once);
-    if (ImGui::Begin((std::string(Version::PROJECT_NAME) + " Menu").c_str(), &m_enabled)) {
+    if (ImGui::Begin((std::string(Version::PROJECT_NAME) + " Menu").c_str(), nullptr)) {
 
         if (ImGui::BeginTabBar("CategoryTabs")) {
             for (const auto& [category, features] : m_featuresByCategory) {
