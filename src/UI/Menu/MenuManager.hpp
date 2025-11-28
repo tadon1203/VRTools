@@ -1,14 +1,11 @@
 #pragma once
 
-#include <map>
-#include <vector>
+#include <memory>
+#include <unordered_map>
 
-#include <imgui.h>
+#include "IMenu.hpp"
 
-#include "Features/FeatureCategory.hpp"
-#include "Features/IFeature.hpp"
-
-enum class MenuView { Main, Features, Settings, HUDEditor };
+enum class MenuPageId { Main, Features, Settings, HUDEditor };
 
 enum class MenuState { Closed, Opening, Open, Closing };
 
@@ -17,9 +14,11 @@ public:
     static MenuManager& instance();
 
     void initialize();
-    void render(); // Called on Render Thread
-
+    void render();
     void toggle();
+
+    void navigateTo(MenuPageId pageId);
+
     [[nodiscard]] bool isOpen() const;
     [[nodiscard]] bool isHUDEditorOpen() const;
 
@@ -27,21 +26,15 @@ private:
     MenuManager()  = default;
     ~MenuManager() = default;
 
+    void updateAnimation();
     void renderBackground();
-    void renderMainView(ImVec2 center, ImVec2 size);
-    void renderFeaturesView(ImVec2 center, ImVec2 size);
-    void renderSettingsView(ImVec2 center, ImVec2 size);
-    void renderHUDEditorToolbar(ImVec2 center);
-
-    void renderFeatureSettings(IFeature* feature);
 
     // Animation State
     MenuState m_state = MenuState::Closed;
+    float m_animTime  = 0.0f;
     float m_alpha     = 0.0f;
 
-    // UI State
-    MenuView m_currentView = MenuView::Main;
-    std::map<FeatureCategory, std::vector<IFeature*>> m_featuresByCategory;
-    FeatureCategory m_selectedCategory = FeatureCategory::System;
-    IFeature* m_selectedFeature        = nullptr;
+    // Page Management
+    MenuPageId m_currentPageId = MenuPageId::Main;
+    std::unordered_map<MenuPageId, std::shared_ptr<IMenu>> m_pages;
 };

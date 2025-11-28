@@ -1,11 +1,15 @@
 #include "MenuManager.hpp"
 
-#include "Core/Settings/SettingsManager.hpp"
-#include "Core/Version.hpp"
-#include "Features/FeatureManager.hpp"
-#include "HUD/HUDManager.hpp"
+#include <imgui.h>
+
 #include "Input/CursorManager.hpp"
-#include "UI/NotificationManager.hpp"
+#include "Utils/Math.hpp"
+
+// Pages
+#include "Pages/FeaturesMenu.hpp"
+#include "Pages/HUDEditorMenu.hpp"
+#include "Pages/MainMenu.hpp"
+#include "Pages/SettingsMenu.hpp"
 
 MenuManager& MenuManager::instance() {
     static MenuManager inst;
@@ -13,22 +17,32 @@ MenuManager& MenuManager::instance() {
 }
 
 void MenuManager::initialize() {
-    const auto& features = FeatureManager::instance().getFeatures();
-    for (const auto& feature : features) {
-        m_featuresByCategory[feature->getCategory()].push_back(feature.get());
-    }
+    m_pages[MenuPageId::Main]      = std::make_shared<MainMenu>();
+    m_pages[MenuPageId::Features]  = std::make_shared<FeaturesMenu>();
+    m_pages[MenuPageId::Settings]  = std::make_shared<SettingsMenu>();
+    m_pages[MenuPageId::HUDEditor] = std::make_shared<HUDEditorMenu>();
 
-    if (!m_featuresByCategory.empty()) {
-        m_selectedCategory = m_featuresByCategory.begin()->first;
-        if (!m_featuresByCategory.begin()->second.empty()) {
-            m_selectedFeature = m_featuresByCategory.begin()->second[0];
-        }
+    for (auto& [id, page] : m_pages) {
+        page->initialize();
     }
 }
+
+void MenuManager::navigateTo(MenuPageId pageId) {
+    if (m_pages.find(pageId) != m_pages.end()) {
+        m_currentPageId = pageId;
+        m_pages[pageId]->onOpen();
+    }
+}
+
 void MenuManager::toggle() {
     if (m_state == MenuState::Closed || m_state == MenuState::Closing) {
-        m_state       = MenuState::Opening;
-        m_currentView = MenuView::Main;
+        m_state = MenuState::Opening;
+
+        // Reset to Main menu when opening, unless we were editing HUD
+        if (m_currentPageId != MenuPageId::HUDEditor) {
+            m_currentPageId = MenuPageId::Main;
+        }
+
         CursorManager::instance().requestUnlock("Menu");
     } else {
         m_state = MenuState::Closing;
@@ -37,281 +51,86 @@ void MenuManager::toggle() {
 
 bool MenuManager::isOpen() const { return m_state != MenuState::Closed; }
 
-bool MenuManager::isHUDEditorOpen() const { return isOpen() && m_currentView == MenuView::HUDEditor; }
+bool MenuManager::isHUDEditorOpen() const { return isOpen() && m_currentPageId == MenuPageId::HUDEditor; }
+
+void MenuManager::updateAnimation() {
+    float dt             = ImGui::GetIO().DeltaTime;
+    const float duration = 0.25f; // in seconds
+
+    if (m_state == MenuState::Opening) {
+        m_animTime += dt / duration;
+        if (m_animTime >= 1.0f) {
+            m_animTime = 1.0f;
+            m_state    = MenuState::Open;
+        }
+    } else if (m_state == MenuState::Closing) {
+        m_animTime -= dt / duration;
+        if (m_animTime <= 0.0f) {
+            m_animTime = 0.0f;
+            m_state    = MenuState::Closed;
+            CursorManager::instance().releaseUnlock("Menu");
+        }
+    }
+
+    // Apply Easing
+    m_alpha = Utils::Math::easeOutCubic(m_animTime);
+}
 
 void MenuManager::render() {
     if (m_state == MenuState::Closed) {
         return;
     }
 
-    // Animation Logic
-    float dt          = ImGui::GetIO().DeltaTime;
-    const float speed = 8.0f;
+    updateAnimation();
 
-    if (m_state == MenuState::Opening) {
-        m_alpha += dt * speed;
-        if (m_alpha >= 1.0f) {
-            m_alpha = 1.0f;
-            m_state = MenuState::Open;
-        }
-    } else if (m_state == MenuState::Closing) {
-        m_alpha -= dt * speed;
-        if (m_alpha <= 0.0f) {
-            m_alpha = 0.0f;
-            m_state = MenuState::Closed;
-            CursorManager::instance().releaseUnlock("Menu");
-            return;
-        }
-    }
-
-    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_alpha);
-
-    float scale = 0.95f + (0.05f * m_alpha);
-    ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX));
-
-    // Do not render full background/main window if in HUD Editor mode
-    if (m_currentView == MenuView::HUDEditor) {
-        renderHUDEditorToolbar(ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, 40.0f));
-        ImGui::PopStyleVar();
+    auto& currentPage = m_pages[m_currentPageId];
+    if (!currentPage) {
         return;
     }
 
-    renderBackground();
+    // Global Alpha
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_alpha);
+
+    // Scale animation (pop effect)
+    float scale = 0.90f + (0.10f * m_alpha);
+
+    if (currentPage->showsBackground()) {
+        renderBackground();
+    }
 
     ImGuiIO& io       = ImGui::GetIO();
     ImVec2 screenSize = io.DisplaySize;
     ImVec2 center     = ImVec2(screenSize.x * 0.5f, screenSize.y * 0.5f);
 
-    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    if (currentPage->showsBackground()) {
+        ImVec2 windowSize = currentPage->getWindowSize();
+        windowSize.x *= scale;
+        windowSize.y *= scale;
 
-    ImVec2 windowSize;
-    if (m_currentView == MenuView::Main) {
-        windowSize = ImVec2(300, 390);
-    } else {
-        windowSize = ImVec2(800, 600);
-    }
+        ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
-    windowSize.x *= scale;
-    windowSize.y *= scale;
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
 
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.05f, 0.05f, 0.95f));
 
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.05f, 0.05f, 0.95f));
-
-    if (ImGui::Begin("VRToolsMenu", nullptr, flags)) {
-        switch (m_currentView) {
-        case MenuView::Main:
-            renderMainView(center, windowSize);
-            break;
-        case MenuView::Features:
-            renderFeaturesView(center, windowSize);
-            break;
-        case MenuView::Settings:
-            renderSettingsView(center, windowSize);
-            break;
-        case MenuView::HUDEditor:
-            break;
+        if (ImGui::Begin("VRToolsMenu", nullptr, flags)) {
+            currentPage->render(center, windowSize);
         }
-    }
-    ImGui::End();
+        ImGui::End();
 
-    ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar();
+    } else {
+        currentPage->render(center, screenSize);
+    }
+
     ImGui::PopStyleVar();
-    ImGui::PopStyleVar(); // Alpha
 }
 
 void MenuManager::renderBackground() {
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
     ImVec2 size    = ImGui::GetIO().DisplaySize;
     dl->AddRectFilled(ImVec2(0, 0), size, ImColor(0.0f, 0.0f, 0.0f, 0.5f * m_alpha));
-}
-
-void MenuManager::renderMainView(ImVec2 center, ImVec2 size) {
-    float contentHeight = 250.0f; // Adjusted for new button
-    ImGui::SetCursorPosY((size.y - contentHeight) * 0.5f);
-
-    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
-    float textWidth = ImGui::CalcTextSize(Version::PROJECT_NAME.data()).x;
-    ImGui::SetCursorPosX((size.x - textWidth) * 0.5f);
-    ImGui::Text("%s", Version::PROJECT_NAME.data());
-    ImGui::PopFont();
-
-    ImGui::Spacing();
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
-    ImGui::Spacing();
-
-    float btnWidth  = 200.0f;
-    float btnHeight = 40.0f;
-    float btnX      = (size.x - btnWidth) * 0.5f;
-
-    ImGui::SetCursorPosX(btnX);
-    if (ImGui::Button("Features", ImVec2(btnWidth, btnHeight))) {
-        m_currentView = MenuView::Features;
-    }
-
-    ImGui::Spacing();
-
-    ImGui::SetCursorPosX(btnX);
-    if (ImGui::Button("HUD Editor", ImVec2(btnWidth, btnHeight))) {
-        m_currentView = MenuView::HUDEditor;
-    }
-
-    ImGui::Spacing();
-
-    ImGui::SetCursorPosX(btnX);
-    if (ImGui::Button("Configuration", ImVec2(btnWidth, btnHeight))) {
-        m_currentView = MenuView::Settings;
-    }
-
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
-
-    ImGui::SetCursorPosX(btnX);
-    if (ImGui::Button("Close", ImVec2(btnWidth, btnHeight))) {
-        toggle();
-    }
-}
-
-void MenuManager::renderHUDEditorToolbar(ImVec2 center) {
-    ImGui::SetNextWindowPos(ImVec2(center.x, 50), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
-    ImGui::SetNextWindowSize(ImVec2(300, 80));
-
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.05f, 0.05f, 0.90f));
-
-    if (ImGui::Begin("HUDEditorToolbar", nullptr, flags)) {
-        ImGui::Text("HUD Layout Editor");
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        ImGui::TextDisabled("Drag elements to move them.");
-
-        ImGui::SameLine();
-        float avail = ImGui::GetContentRegionAvail().x;
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + avail - 100);
-
-        if (ImGui::Button("Save & Exit", ImVec2(100, 0))) {
-            auto config = HUDManager::instance().saveConfig();
-            SettingsManager::instance().saveToFile(config); // Or just HUD config depending on implementation
-            m_currentView = MenuView::Main;
-        }
-    }
-    ImGui::End();
-
-    ImGui::PopStyleColor();
-    ImGui::PopStyleVar();
-}
-
-void MenuManager::renderFeaturesView(ImVec2 center, ImVec2 size) {
-    if (ImGui::Button("< Back")) {
-        m_currentView = MenuView::Main;
-    }
-    ImGui::SameLine();
-    ImGui::Text("Features");
-    ImGui::Separator();
-
-    if (ImGui::BeginTabBar("CategoryTabs")) {
-        for (const auto& [category, features] : m_featuresByCategory) {
-            if (ImGui::BeginTabItem(toString(category))) {
-                m_selectedCategory = category;
-
-                bool found = false;
-                for (auto* f : features) {
-                    if (f == m_selectedFeature) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found && !features.empty()) {
-                    m_selectedFeature = features[0];
-                }
-
-                ImGui::EndTabItem();
-            }
-        }
-        ImGui::EndTabBar();
-    }
-
-    ImGui::BeginChild("SplitView", ImVec2(0, 0), true);
-
-    ImGui::BeginChild("LeftPane", ImVec2(180, 0), true);
-    auto& currentFeatures = m_featuresByCategory[m_selectedCategory];
-    for (auto* feature : currentFeatures) {
-        if (ImGui::Selectable(feature->getName().c_str(), m_selectedFeature == feature)) {
-            m_selectedFeature = feature;
-        }
-    }
-    ImGui::EndChild();
-
-    ImGui::SameLine();
-
-    ImGui::BeginChild("RightPane", ImVec2(0, 0), true);
-    if (m_selectedFeature) {
-        renderFeatureSettings(m_selectedFeature);
-    }
-    ImGui::EndChild();
-
-    ImGui::EndChild();
-}
-
-void MenuManager::renderSettingsView(ImVec2 center, ImVec2 size) {
-    if (ImGui::Button("< Back")) {
-        m_currentView = MenuView::Main;
-    }
-    ImGui::SameLine();
-    ImGui::Text("Configuration");
-    ImGui::Separator();
-
-    ImGui::Spacing();
-
-    if (ImGui::Button("Save Configuration")) {
-        auto config = FeatureManager::instance().saveConfig();
-
-        auto hudConfig = HUDManager::instance().saveConfig();
-        if (hudConfig.contains("HUD")) {
-            config["HUD"] = hudConfig["HUD"];
-        }
-
-        SettingsManager::instance().saveToFile(config);
-        NotificationManager::instance().success("Config", "Settings saved to disk.");
-    }
-
-    ImGui::SameLine();
-
-    if (ImGui::Button("Reload Configuration")) {
-        auto config = SettingsManager::instance().loadFromFile();
-        FeatureManager::instance().loadConfig(config);
-        HUDManager::instance().loadConfig(config);
-        NotificationManager::instance().success("Config", "Settings reloaded from disk.");
-    }
-}
-
-void MenuManager::renderFeatureSettings(IFeature* feature) {
-    ImGui::PushID(feature);
-    ImGui::Text("%s", feature->getName().c_str());
-    ImGui::Separator();
-
-    bool enabled = feature->isEnabled();
-    if (ImGui::Checkbox("Enabled", &enabled)) {
-        feature->setEnabled(enabled);
-    }
-
-    if (auto k = feature->getKeybind()) {
-        ImGui::SameLine();
-        ImGui::TextDisabled("(Key: %d)", *k);
-    }
-
-    ImGui::Separator();
-
-    feature->onMenuRender();
-
-    ImGui::PopID();
 }

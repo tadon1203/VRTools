@@ -2,8 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+
 #include <imgui.h>
 #include <imgui_internal.h>
+
+#include "Utils/Math.hpp"
 
 NotificationManager& NotificationManager::instance() {
     static NotificationManager inst;
@@ -54,10 +57,6 @@ void NotificationManager::update() {
         m_notifications.end());
 }
 
-float easeOutCubic(float t) { return 1.0f - std::pow(1.0f - t, 3.0f); }
-
-float lerp(float a, float b, float t) { return a + (b - a) * t; }
-
 void NotificationManager::render() {
     if (m_notifications.empty()) {
         return;
@@ -103,7 +102,7 @@ void NotificationManager::render() {
 
         if (elapsedSeconds < FADE_IN_TIME) {
             float t      = elapsedSeconds / FADE_IN_TIME;
-            float easedT = easeOutCubic(t);
+            float easedT = Utils::Math::easeOutCubic(t);
             alpha        = easedT;
             slideOffset  = (1.0f - easedT) * (NOTIFY_WIDTH + NOTIFY_MARGIN_X);
         } else if (elapsedSeconds > (notif.duration - FADE_OUT_TIME)) {
@@ -111,7 +110,7 @@ void NotificationManager::render() {
             float t         = 1.0f - (remaining / FADE_OUT_TIME);
             t               = std::clamp(t, 0.0f, 1.0f);
 
-            float easedT = easeOutCubic(t);
+            float easedT = Utils::Math::easeOutCubic(t);
 
             alpha       = 1.0f - easedT;
             slideOffset = easedT * (NOTIFY_WIDTH + NOTIFY_MARGIN_X);
@@ -125,7 +124,7 @@ void NotificationManager::render() {
         }
 
         float t        = 1.0f - std::pow(0.5f, dt * Y_SMOOTHING_SPEED);
-        notif.currentY = lerp(notif.currentY, targetY, t);
+        notif.currentY = Utils::Math::lerp(notif.currentY, targetY, t);
 
         stackBottomY -= (totalBoxHeight + NOTIFY_SPACING);
 
