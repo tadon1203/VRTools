@@ -6,6 +6,7 @@
 #include "Input/CursorManager.hpp"
 #include "Input/InputManager.hpp"
 #include "SDK/Game/Photon/EventData.hpp"
+#include "SDK/Game/PlayerManager.hpp"
 #include "SDK/Il2Cpp/Il2Cpp.hpp"
 #include "SDK/Unity/Cursor.hpp"
 #include "UI/NotificationManager.hpp"
@@ -84,6 +85,9 @@ void GameHooks::setupCursorHooks() {
 
 void GameHooks::hookUpdate(void* instance) {
     InputManager::instance().update();
+
+    PlayerManager::instance().update();
+
     FeatureManager::instance().updateAll();
     NotificationManager::instance().update();
 
