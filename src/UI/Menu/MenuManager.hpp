@@ -7,8 +7,6 @@
 
 enum class MenuPageId { Main, Features, Settings, HUDEditor };
 
-enum class MenuState { Closed, Opening, Open, Closing };
-
 class MenuManager {
 public:
     static MenuManager& instance();
@@ -26,13 +24,9 @@ private:
     MenuManager()  = default;
     ~MenuManager() = default;
 
-    void updateAnimation();
     void renderBackground();
 
-    // Animation State
-    MenuState m_state = MenuState::Closed;
-    float m_animTime  = 0.0f;
-    float m_alpha     = 0.0f;
+    bool m_isOpen = false;
 
     // Page Management
     MenuPageId m_currentPageId = MenuPageId::Main;

@@ -3,7 +3,6 @@
 #include <imgui.h>
 
 #include "Input/CursorManager.hpp"
-#include "Utils/Math.hpp"
 
 // Pages
 #include "Pages/FeaturesMenu.hpp"
@@ -35,65 +34,34 @@ void MenuManager::navigateTo(MenuPageId pageId) {
 }
 
 void MenuManager::toggle() {
-    if (m_state == MenuState::Closed || m_state == MenuState::Closing) {
-        m_state = MenuState::Opening;
+    m_isOpen = !m_isOpen;
 
+    if (m_isOpen) {
         // Reset to Main menu when opening, unless we were editing HUD
         if (m_currentPageId != MenuPageId::HUDEditor) {
             m_currentPageId = MenuPageId::Main;
         }
-
         CursorManager::instance().requestUnlock("Menu");
     } else {
-        m_state = MenuState::Closing;
+        CursorManager::instance().releaseUnlock("Menu");
     }
 }
 
-bool MenuManager::isOpen() const { return m_state != MenuState::Closed; }
+bool MenuManager::isOpen() const { return m_isOpen; }
 
-bool MenuManager::isHUDEditorOpen() const { return isOpen() && m_currentPageId == MenuPageId::HUDEditor; }
-
-void MenuManager::updateAnimation() {
-    float dt             = ImGui::GetIO().DeltaTime;
-    const float duration = 0.25f; // in seconds
-
-    if (m_state == MenuState::Opening) {
-        m_animTime += dt / duration;
-        if (m_animTime >= 1.0f) {
-            m_animTime = 1.0f;
-            m_state    = MenuState::Open;
-        }
-    } else if (m_state == MenuState::Closing) {
-        m_animTime -= dt / duration;
-        if (m_animTime <= 0.0f) {
-            m_animTime = 0.0f;
-            m_state    = MenuState::Closed;
-            CursorManager::instance().releaseUnlock("Menu");
-        }
-    }
-
-    // Apply Easing
-    m_alpha = Utils::Math::easeOutCubic(m_animTime);
-}
+bool MenuManager::isHUDEditorOpen() const { return m_isOpen && m_currentPageId == MenuPageId::HUDEditor; }
 
 void MenuManager::render() {
-    if (m_state == MenuState::Closed) {
+    if (!m_isOpen) {
         return;
     }
-
-    updateAnimation();
 
     auto& currentPage = m_pages[m_currentPageId];
     if (!currentPage) {
         return;
     }
 
-    // Global Alpha
-    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_alpha);
-
-    // Scale animation (pop effect)
-    float scale = 0.90f + (0.10f * m_alpha);
-
+    // Render Fullscreen Background
     if (currentPage->showsBackground()) {
         renderBackground();
     }
@@ -104,8 +72,6 @@ void MenuManager::render() {
 
     if (currentPage->showsBackground()) {
         ImVec2 windowSize = currentPage->getWindowSize();
-        windowSize.x *= scale;
-        windowSize.y *= scale;
 
         ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
@@ -125,12 +91,10 @@ void MenuManager::render() {
     } else {
         currentPage->render(center, screenSize);
     }
-
-    ImGui::PopStyleVar();
 }
 
 void MenuManager::renderBackground() {
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
     ImVec2 size    = ImGui::GetIO().DisplaySize;
-    dl->AddRectFilled(ImVec2(0, 0), size, ImColor(0.0f, 0.0f, 0.0f, 0.5f * m_alpha));
+    dl->AddRectFilled(ImVec2(0, 0), size, ImColor(0.0f, 0.0f, 0.0f, 0.5f));
 }
