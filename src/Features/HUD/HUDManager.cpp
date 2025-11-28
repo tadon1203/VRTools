@@ -18,15 +18,22 @@ void HUDManager::initializeAll() {
     }
 }
 void HUDManager::render() {
-    ImDrawList* dl = ImGui::GetForegroundDrawList();
+    ImDrawList* dl    = ImGui::GetForegroundDrawList();
+    ImVec2 screenSize = ImGui::GetIO().DisplaySize;
 
     if (m_editMode) {
         updateInput();
         drawGrid(dl);
         dl->AddText(ImVec2(10, 10), ImColor(0, 255, 0), "HUD EDIT MODE (Drag to move)");
+
+        dl->AddLine(
+            ImVec2(screenSize.x * 0.5f, 0), ImVec2(screenSize.x * 0.5f, screenSize.y), ImColor(255, 255, 255, 50));
+        dl->AddLine(
+            ImVec2(0, screenSize.y * 0.5f), ImVec2(screenSize.x, screenSize.y * 0.5f), ImColor(255, 255, 255, 50));
     }
 
     for (const auto& comp : m_components) {
+        comp->updatePosition(screenSize);
         comp->render(dl, m_editMode);
     }
 }
@@ -56,7 +63,8 @@ void HUDManager::updateInput() {
     if (m_draggedComponent) {
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
             m_draggedComponent->m_isDragging = false;
-            m_draggedComponent               = nullptr;
+            m_draggedComponent->calculateAnchor(io.DisplaySize);
+            m_draggedComponent = nullptr;
         } else {
             // snap logic
             float rawX = mousePos.x - m_dragOffset.x;
