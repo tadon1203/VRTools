@@ -3,8 +3,9 @@
 #include <memory>
 #include <vector>
 
-#include "IFeature.hpp"
 #include <nlohmann/json.hpp>
+
+#include "IFeature.hpp"
 
 class FeatureManager {
 public:

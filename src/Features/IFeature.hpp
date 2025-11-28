@@ -3,11 +3,12 @@
 #include <optional>
 #include <string>
 
+#include <nlohmann/json.hpp>
+
 #include "FeatureCategory.hpp"
 #include "SDK/Game/Photon/EventData.hpp"
 #include "SDK/Game/Photon/SendOptions.hpp"
 #include "UI/NotificationManager.hpp"
-#include <nlohmann/json.hpp>
 
 class IFeature {
 public:

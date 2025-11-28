@@ -4,7 +4,7 @@
 
 #include "Core/Settings/SettingsManager.hpp"
 #include "Core/Version.hpp"
-#include "Features/Framework/FeatureManager.hpp"
+#include "Features/FeatureManager.hpp"
 #include "HUD/HUDManager.hpp"
 #include "Input/CursorManager.hpp"
 

@@ -1,7 +1,7 @@
 #include "GameHooks.hpp"
 
 #include "Core/Logger.hpp"
-#include "Features/Framework/FeatureManager.hpp"
+#include "Features/FeatureManager.hpp"
 #include "Hooking/HookManager.hpp"
 #include "Input/CursorManager.hpp"
 #include "Input/InputManager.hpp"

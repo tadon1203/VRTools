@@ -1,6 +1,6 @@
 #include "Core.hpp"
 
-#include "Features/Framework/FeatureManager.hpp"
+#include "Features/FeatureManager.hpp"
 #include "HUD/Components/LogComponent.hpp"
 #include "HUD/HUDManager.hpp"
 #include "Hooking/GameHooks.hpp"

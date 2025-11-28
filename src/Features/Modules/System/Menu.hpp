@@ -5,7 +5,7 @@
 
 #include <imgui.h>
 
-#include "Features/Framework/IFeature.hpp"
+#include "Features/IFeature.hpp"
 
 enum class MenuView {
     Main,
