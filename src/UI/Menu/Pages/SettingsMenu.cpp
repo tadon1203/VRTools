@@ -2,8 +2,6 @@
 
 #include "../MenuManager.hpp"
 #include "Core/Settings/SettingsManager.hpp"
-#include "Features/FeatureManager.hpp"
-#include "HUD/HUDManager.hpp"
 #include "UI/NotificationManager.hpp"
 
 void SettingsMenu::render(ImVec2 center, ImVec2 size) {
@@ -17,26 +15,14 @@ void SettingsMenu::render(ImVec2 center, ImVec2 size) {
     ImGui::Spacing();
 
     if (ImGui::Button("Save Configuration")) {
-        auto config    = FeatureManager::instance().saveConfig();
-        auto hudConfig = HUDManager::instance().saveConfig();
-
-        config["HUD"] = hudConfig;
-
-        SettingsManager::instance().saveToFile(config);
+        SettingsManager::instance().saveAll();
         NotificationManager::instance().success("Config", "Settings saved to disk.");
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("Reload Configuration")) {
-        auto config = SettingsManager::instance().loadFromFile();
-
-        FeatureManager::instance().loadConfig(config);
-
-        if (config.contains("HUD")) {
-            HUDManager::instance().loadConfig(config);
-        }
-
+        SettingsManager::instance().loadAll();
         NotificationManager::instance().success("Config", "Settings reloaded from disk.");
     }
 }

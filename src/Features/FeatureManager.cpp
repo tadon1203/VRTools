@@ -52,11 +52,11 @@ bool FeatureManager::onRaiseEventAll(
     return true;
 }
 
-void FeatureManager::loadConfig(const nlohmann::json& root) {
+void FeatureManager::onLoadConfig(const nlohmann::json& section) {
     for (const auto& feature : m_features) {
-        if (root.contains(feature->getName())) {
+        if (section.contains(feature->getName())) {
             try {
-                feature->onLoadConfig(root[feature->getName()]);
+                feature->onLoadConfig(section[feature->getName()]);
             } catch (const std::exception& e) {
                 Logger::instance().error("Error loading config for {}: {}", feature->getName(), e.what());
             }
@@ -64,12 +64,12 @@ void FeatureManager::loadConfig(const nlohmann::json& root) {
     }
 }
 
-nlohmann::json FeatureManager::saveConfig() const {
-    nlohmann::json root = nlohmann::json::object();
+nlohmann::json FeatureManager::onSaveConfig() const {
+    nlohmann::json j = nlohmann::json::object();
     for (const auto& feature : m_features) {
-        nlohmann::json j = nlohmann::json::object();
-        feature->onSaveConfig(j);
-        root[feature->getName()] = j;
+        nlohmann::json f = nlohmann::json::object();
+        feature->onSaveConfig(f);
+        j[feature->getName()] = f;
     }
-    return root;
+    return j;
 }

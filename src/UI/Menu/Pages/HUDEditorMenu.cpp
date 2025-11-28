@@ -2,7 +2,6 @@
 
 #include "../MenuManager.hpp"
 #include "Core/Settings/SettingsManager.hpp"
-#include "Features/FeatureManager.hpp"
 #include "HUD/HUDManager.hpp"
 
 void HUDEditorMenu::render(ImVec2 center, ImVec2 size) {
@@ -26,12 +25,7 @@ void HUDEditorMenu::render(ImVec2 center, ImVec2 size) {
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + avail - 100);
 
         if (ImGui::Button("Save & Exit", ImVec2(100, 0))) {
-            auto rootConfig = FeatureManager::instance().saveConfig();
-            auto hudConfig  = HUDManager::instance().saveConfig();
-
-            rootConfig["HUD"] = hudConfig;
-
-            SettingsManager::instance().saveToFile(rootConfig);
+            SettingsManager::instance().saveAll();
             MenuManager::instance().navigateTo(MenuPageId::Main);
         }
     }

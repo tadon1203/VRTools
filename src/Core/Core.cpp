@@ -44,22 +44,19 @@ void Core::initialize() {
         GameHooks::initialize();
 
         auto& fm = FeatureManager::instance();
-
         fm.initializeAll();
 
         auto& hud = HUDManager::instance();
         hud.registerComponent<LogComponent>();
         hud.initializeAll();
 
+        SettingsManager::instance().registerHandler(&fm);
+        SettingsManager::instance().registerHandler(&hud);
+
         MenuManager::instance().initialize();
         InputManager::instance().registerKeybind(VK_INSERT, [] { MenuManager::instance().toggle(); });
 
-        auto settings = SettingsManager::instance().loadFromFile();
-        fm.loadConfig(settings);
-        hud.loadConfig(settings);
-
-        auto currentConfig = fm.saveConfig();
-        SettingsManager::instance().saveToFile(currentConfig);
+        SettingsManager::instance().loadAll();
 
         for (const auto& feature : fm.getFeatures()) {
             if (auto vkCode = feature->getKeybind()) {
@@ -79,14 +76,7 @@ void Core::initialize() {
 void Core::shutdown() {
     Logger::instance().info("Core shutting down...");
 
-    auto rootJson = FeatureManager::instance().saveConfig();
-
-    auto hudConfig = HUDManager::instance().saveConfig();
-    if (hudConfig.contains("HUD")) {
-        rootJson["HUD"] = hudConfig["HUD"];
-    }
-
-    SettingsManager::instance().saveToFile(rootJson);
+    SettingsManager::instance().saveAll();
 
     HookManager::instance().shutdown();
     Renderer::instance().shutdown();

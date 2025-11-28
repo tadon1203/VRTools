@@ -3,11 +3,10 @@
 #include <memory>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-
+#include "Core/Settings/ISettingsHandler.hpp"
 #include "HUDComponent.hpp"
 
-class HUDManager {
+class HUDManager : public ISettingsHandler {
 public:
     static HUDManager& instance();
 
@@ -16,12 +15,13 @@ public:
 
     template <typename T>
     void registerComponent() {
-        static_assert(std::is_base_of_v<HUDComponent, T>, "T must be derived from HUDComponent");
         m_components.push_back(std::make_unique<T>());
     }
 
-    void loadConfig(const nlohmann::json& root);
-    [[nodiscard]] nlohmann::json saveConfig() const;
+    // ISettingsHandler
+    [[nodiscard]] std::string getSectionName() const override { return "HUD"; }
+    [[nodiscard]] nlohmann::json onSaveConfig() const override;
+    void onLoadConfig(const nlohmann::json& section) override;
 
 private:
     HUDManager()  = default;
@@ -31,9 +31,7 @@ private:
     void drawGrid(ImDrawList* dl);
 
     std::vector<std::unique_ptr<HUDComponent>> m_components;
-
-    float m_gridSize = 20.0f;
-
+    float m_gridSize                 = 20.0f;
     HUDComponent* m_draggedComponent = nullptr;
     ImVec2 m_dragOffset{ 0, 0 };
 };
