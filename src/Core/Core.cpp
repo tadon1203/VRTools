@@ -1,6 +1,7 @@
 #include "Core.hpp"
 
 #include "Features/FeatureManager.hpp"
+#include "Features/Modules/Visuals/ESP.hpp"
 #include "HUD/Components/LogComponent.hpp"
 #include "HUD/HUDManager.hpp"
 #include "Hooking/GameHooks.hpp"
@@ -44,6 +45,7 @@ void Core::initialize() {
         GameHooks::initialize();
 
         auto& fm = FeatureManager::instance();
+        fm.registerFeature<ESP>();
         fm.initializeAll();
 
         auto& hud = HUDManager::instance();
