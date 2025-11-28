@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <vector>
 
-#include "Features/HUD/HUDUtils.hpp"
+#include "../HUDUtils.hpp"
 
 LogComponent::LogComponent()
-    : IHUDComponent("LogOverlay", ImVec2(20, 300)) {
+    : HUDComponent("LogOverlay", ImVec2(20, 300)) {
     m_enabled = true;
 }
 

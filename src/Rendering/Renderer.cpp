@@ -9,7 +9,7 @@
 
 #include "Core/Logger.hpp"
 #include "Features/Framework/FeatureManager.hpp"
-#include "Features/HUD/HUDManager.hpp"
+#include "HUD/HUDManager.hpp"
 #include "Hooking/HookManager.hpp"
 #include "Hooking/WndProcHook.hpp"
 #include "UI/NotificationManager.hpp"

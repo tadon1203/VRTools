@@ -7,11 +7,11 @@
 
 enum class HUDAnchor { TopLeft, TopRight, BottomLeft, BottomRight };
 
-class IHUDComponent {
+class HUDComponent {
 public:
-    virtual ~IHUDComponent() = default;
+    virtual ~HUDComponent() = default;
 
-    explicit IHUDComponent(std::string name, ImVec2 defaultPos);
+    explicit HUDComponent(std::string name, ImVec2 defaultPos);
 
     virtual void initialize() {}
 

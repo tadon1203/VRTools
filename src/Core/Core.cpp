@@ -1,9 +1,9 @@
 #include "Core.hpp"
 
 #include "Features/Framework/FeatureManager.hpp"
-#include "Features/HUD/Components/LogComponent.hpp"
-#include "Features/HUD/HUDManager.hpp"
 #include "Features/Modules/System/Menu.hpp"
+#include "HUD/Components/LogComponent.hpp"
+#include "HUD/HUDManager.hpp"
 #include "Hooking/GameHooks.hpp"
 #include "Hooking/HookManager.hpp"
 #include "Hooking/WndProcHook.hpp"
@@ -55,6 +55,7 @@ void Core::initialize() {
 
         auto settings = SettingsManager::instance().loadFromFile();
         fm.loadConfig(settings);
+        hud.loadConfig(settings);
 
         auto currentConfig = fm.saveConfig();
         SettingsManager::instance().saveToFile(currentConfig);

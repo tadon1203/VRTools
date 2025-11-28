@@ -1,11 +1,11 @@
-#include "IHUDComponent.hpp"
+#include "HUDComponent.hpp"
 
-IHUDComponent::IHUDComponent(std::string name, ImVec2 defaultPos)
+HUDComponent::HUDComponent(std::string name, ImVec2 defaultPos)
     : m_name(std::move(name))
     , m_pos(defaultPos)
     , m_anchorOffset(defaultPos) {}
 
-void IHUDComponent::updatePosition(ImVec2 screenSize) {
+void HUDComponent::updatePosition(ImVec2 screenSize) {
     if (m_isDragging) {
         return;
     }
@@ -30,7 +30,7 @@ void IHUDComponent::updatePosition(ImVec2 screenSize) {
     }
 }
 
-void IHUDComponent::calculateAnchor(ImVec2 screenSize) {
+void HUDComponent::calculateAnchor(ImVec2 screenSize) {
     ImVec2 size   = getSize();
     ImVec2 center = ImVec2(m_pos.x + size.x * 0.5f, m_pos.y + size.y * 0.5f);
 
@@ -41,7 +41,7 @@ void IHUDComponent::calculateAnchor(ImVec2 screenSize) {
         m_anchor = HUDAnchor::TopLeft;
     } else if (!isLeft && isTop) {
         m_anchor = HUDAnchor::TopRight;
-    } else if (isLeft && !isTop) {
+    } else if (isLeft) {
         m_anchor = HUDAnchor::BottomLeft;
     } else {
         m_anchor = HUDAnchor::BottomRight;
@@ -66,7 +66,7 @@ void IHUDComponent::calculateAnchor(ImVec2 screenSize) {
     }
 }
 
-void IHUDComponent::render(ImDrawList* drawList, bool isEditMode) {
+void HUDComponent::render(ImDrawList* drawList, bool isEditMode) {
     if (!m_enabled && !isEditMode) {
         return;
     }
@@ -105,7 +105,7 @@ void IHUDComponent::render(ImDrawList* drawList, bool isEditMode) {
     }
 }
 
-void IHUDComponent::onLoadConfig(const nlohmann::json& j) {
+void HUDComponent::onLoadConfig(const nlohmann::json& j) {
     if (j.contains("Anchor")) {
         m_anchor = static_cast<HUDAnchor>(j["Anchor"]);
     }
@@ -131,8 +131,8 @@ void IHUDComponent::onLoadConfig(const nlohmann::json& j) {
     }
 }
 
-void IHUDComponent::onSaveConfig(nlohmann::json& j) const {
-    j["Anchor"]  = static_cast<int>(m_anchor);
+void HUDComponent::onSaveConfig(nlohmann::json& j) const {
+    j["Anchor"]  = m_anchor;
     j["OffsetX"] = m_anchorOffset.x;
     j["OffsetY"] = m_anchorOffset.y;
     j["Enabled"] = m_enabled;

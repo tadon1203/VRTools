@@ -3,7 +3,7 @@
 #include <deque>
 #include <mutex>
 
-#include "../IHUDComponent.hpp"
+#include "../HUDComponent.hpp"
 #include "Core/Logger.hpp"
 
 struct LogEntry {
@@ -12,7 +12,7 @@ struct LogEntry {
     float timeAlive;
 };
 
-class LogComponent : public IHUDComponent {
+class LogComponent : public HUDComponent {
 public:
     LogComponent();
     void initialize() override;
