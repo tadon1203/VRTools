@@ -1,7 +1,6 @@
 #include "Core.hpp"
 
 #include "Features/Framework/FeatureManager.hpp"
-#include "Features/Modules/System/Menu.hpp"
 #include "HUD/Components/LogComponent.hpp"
 #include "HUD/HUDManager.hpp"
 #include "Hooking/GameHooks.hpp"
@@ -12,6 +11,7 @@
 #include "Rendering/Renderer.hpp"
 #include "SDK/Il2Cpp/Il2Cpp.hpp"
 #include "Settings/SettingsManager.hpp"
+#include "UI/Menu/MenuManager.hpp"
 
 Core& Core::instance() {
     static Core inst;
@@ -44,14 +44,15 @@ void Core::initialize() {
         GameHooks::initialize();
 
         auto& fm = FeatureManager::instance();
-        fm.registerFeature<Menu>();
 
         fm.initializeAll();
 
         auto& hud = HUDManager::instance();
         hud.registerComponent<LogComponent>();
-
         hud.initializeAll();
+
+        MenuManager::instance().initialize();
+        InputManager::instance().registerKeybind(VK_INSERT, [] { MenuManager::instance().toggle(); });
 
         auto settings = SettingsManager::instance().loadFromFile();
         fm.loadConfig(settings);
