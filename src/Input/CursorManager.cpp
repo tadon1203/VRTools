@@ -8,6 +8,10 @@ CursorManager& CursorManager::instance() {
 }
 
 void CursorManager::initialize() {
+    if (m_initialized) {
+        return;
+    }
+
     try {
         m_lastLockMode = UnityEngine::Cursor::get_lockState();
         m_lastVisible  = UnityEngine::Cursor::get_visible();
@@ -20,45 +24,48 @@ void CursorManager::initialize() {
 void CursorManager::update() {
     if (!m_initialized) {
         initialize();
-        return;
     }
 
-    if (m_shouldUnlock) {
+    bool hasRequests;
+    {
+        std::lock_guard lock(m_mutex);
+        hasRequests = !m_requests.empty();
+    }
+
+    if (hasRequests) {
         m_isApplying = true;
         UnityEngine::Cursor::set_lockState(UnityEngine::CursorLockMode::None);
         UnityEngine::Cursor::set_visible(true);
-        m_isApplying = false;
+        m_isApplying  = false;
+        m_wasUnlocked = true;
+    } else if (m_wasUnlocked) {
+        m_isApplying = true;
+        UnityEngine::Cursor::set_lockState(m_lastLockMode);
+        UnityEngine::Cursor::set_visible(m_lastVisible);
+        m_isApplying  = false;
+        m_wasUnlocked = false;
     }
 }
 
-void CursorManager::setUnlock(bool unlock) {
-    if (m_shouldUnlock == unlock) {
-        return;
-    }
+void CursorManager::requestUnlock(const std::string& id) {
+    std::lock_guard lock(m_mutex);
+    m_requests.insert(id);
+}
 
-    m_shouldUnlock = unlock;
-
-    m_isApplying = true;
-    if (m_shouldUnlock) {
-        UnityEngine::Cursor::set_lockState(UnityEngine::CursorLockMode::None);
-        UnityEngine::Cursor::set_visible(true);
-    } else {
-        UnityEngine::Cursor::set_lockState(m_lastLockMode);
-        UnityEngine::Cursor::set_visible(m_lastVisible);
-    }
-    m_isApplying = false;
+void CursorManager::releaseUnlock(const std::string& id) {
+    std::lock_guard lock(m_mutex);
+    m_requests.erase(id);
 }
 
 void CursorManager::onSetLockState(UnityEngine::CursorLockMode& value) {
-    // to avoid infinite loop
     if (m_isApplying) {
         return;
     }
 
-    // Capture what the game wants to do
+    std::lock_guard lock(m_mutex);
     m_lastLockMode = value;
 
-    if (m_shouldUnlock) {
+    if (!m_requests.empty()) {
         value = UnityEngine::CursorLockMode::None;
     }
 }
@@ -68,9 +75,10 @@ void CursorManager::onSetVisible(bool& value) {
         return;
     }
 
+    std::lock_guard lock(m_mutex);
     m_lastVisible = value;
 
-    if (m_shouldUnlock) {
+    if (!m_requests.empty()) {
         value = true;
     }
 }

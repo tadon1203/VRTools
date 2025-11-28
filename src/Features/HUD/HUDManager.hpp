@@ -20,8 +20,8 @@ public:
         m_components.push_back(std::make_unique<T>());
     }
 
-    void setEditMode(bool enabled) { m_editMode = enabled; }
-    bool isEditMode() const { return m_editMode; }
+    void setEditMode(bool enabled);
+    [[nodiscard]] bool isEditMode() const { return m_editMode; }
 
     void loadConfig(const nlohmann::json& root);
     [[nodiscard]] nlohmann::json saveConfig() const;

@@ -5,6 +5,7 @@
 #include <imgui.h>
 
 #include "Core/Logger.hpp"
+#include "Input/CursorManager.hpp"
 
 HUDManager& HUDManager::instance() {
     static HUDManager inst;
@@ -108,7 +109,7 @@ void HUDManager::loadConfig(const nlohmann::json& root) {
     auto& j = root["HUD"];
 
     if (j.contains("EditMode")) {
-        m_editMode = j["EditMode"];
+        setEditMode(j["EditMode"]);
     }
 
     if (j.contains("Components")) {
@@ -132,4 +133,17 @@ nlohmann::json HUDManager::saveConfig() const {
     }
     root["Components"] = comps;
     return root;
+}
+
+void HUDManager::setEditMode(bool enabled) {
+    if (m_editMode == enabled) {
+        return;
+    }
+    m_editMode = enabled;
+
+    if (m_editMode) {
+        CursorManager::instance().requestUnlock("HUD");
+    } else {
+        CursorManager::instance().releaseUnlock("HUD");
+    }
 }
