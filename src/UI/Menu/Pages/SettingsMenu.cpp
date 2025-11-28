@@ -17,12 +17,10 @@ void SettingsMenu::render(ImVec2 center, ImVec2 size) {
     ImGui::Spacing();
 
     if (ImGui::Button("Save Configuration")) {
-        auto config = FeatureManager::instance().saveConfig();
-
+        auto config    = FeatureManager::instance().saveConfig();
         auto hudConfig = HUDManager::instance().saveConfig();
-        if (hudConfig.contains("HUD")) {
-            config["HUD"] = hudConfig["HUD"];
-        }
+
+        config["HUD"] = hudConfig;
 
         SettingsManager::instance().saveToFile(config);
         NotificationManager::instance().success("Config", "Settings saved to disk.");
@@ -32,8 +30,13 @@ void SettingsMenu::render(ImVec2 center, ImVec2 size) {
 
     if (ImGui::Button("Reload Configuration")) {
         auto config = SettingsManager::instance().loadFromFile();
+
         FeatureManager::instance().loadConfig(config);
-        HUDManager::instance().loadConfig(config);
+
+        if (config.contains("HUD")) {
+            HUDManager::instance().loadConfig(config);
+        }
+
         NotificationManager::instance().success("Config", "Settings reloaded from disk.");
     }
 }

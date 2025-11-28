@@ -65,9 +65,9 @@ void FeatureManager::loadConfig(const nlohmann::json& root) {
 }
 
 nlohmann::json FeatureManager::saveConfig() const {
-    nlohmann::json root;
+    nlohmann::json root = nlohmann::json::object();
     for (const auto& feature : m_features) {
-        nlohmann::json j;
+        nlohmann::json j = nlohmann::json::object();
         feature->onSaveConfig(j);
         root[feature->getName()] = j;
     }

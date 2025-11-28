@@ -2,10 +2,10 @@
 
 #include "../MenuManager.hpp"
 #include "Core/Settings/SettingsManager.hpp"
+#include "Features/FeatureManager.hpp"
 #include "HUD/HUDManager.hpp"
 
 void HUDEditorMenu::render(ImVec2 center, ImVec2 size) {
-    // Toolbar
     ImGui::SetNextWindowPos(ImVec2(center.x, 50), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
     ImGui::SetNextWindowSize(ImVec2(300, 80));
 
@@ -26,8 +26,12 @@ void HUDEditorMenu::render(ImVec2 center, ImVec2 size) {
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + avail - 100);
 
         if (ImGui::Button("Save & Exit", ImVec2(100, 0))) {
-            auto config = HUDManager::instance().saveConfig();
-            SettingsManager::instance().saveToFile(config);
+            auto rootConfig = FeatureManager::instance().saveConfig();
+            auto hudConfig  = HUDManager::instance().saveConfig();
+
+            rootConfig["HUD"] = hudConfig;
+
+            SettingsManager::instance().saveToFile(rootConfig);
             MenuManager::instance().navigateTo(MenuPageId::Main);
         }
     }

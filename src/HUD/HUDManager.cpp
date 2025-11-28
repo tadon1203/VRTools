@@ -114,11 +114,11 @@ void HUDManager::loadConfig(const nlohmann::json& root) {
 }
 
 nlohmann::json HUDManager::saveConfig() const {
-    nlohmann::json root;
+    nlohmann::json root  = nlohmann::json::object();
+    nlohmann::json comps = nlohmann::json::object();
 
-    nlohmann::json comps;
     for (const auto& comp : m_components) {
-        nlohmann::json c;
+        nlohmann::json c = nlohmann::json::object();
         comp->onSaveConfig(c);
         comps[comp->getName()] = c;
     }
