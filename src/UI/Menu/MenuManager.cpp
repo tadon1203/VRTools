@@ -2,7 +2,7 @@
 
 #include "Core/Settings/SettingsManager.hpp"
 #include "Core/Version.hpp"
-#include "Features/Framework/FeatureManager.hpp"
+#include "Features/FeatureManager.hpp"
 #include "HUD/HUDManager.hpp"
 #include "Input/CursorManager.hpp"
 #include "UI/NotificationManager.hpp"
@@ -25,7 +25,6 @@ void MenuManager::initialize() {
         }
     }
 }
-
 void MenuManager::toggle() {
     if (m_state == MenuState::Closed || m_state == MenuState::Closing) {
         m_state       = MenuState::Opening;
@@ -37,6 +36,8 @@ void MenuManager::toggle() {
 }
 
 bool MenuManager::isOpen() const { return m_state != MenuState::Closed; }
+
+bool MenuManager::isHUDEditorOpen() const { return isOpen() && m_currentView == MenuView::HUDEditor; }
 
 void MenuManager::render() {
     if (m_state == MenuState::Closed) {
@@ -65,9 +66,15 @@ void MenuManager::render() {
 
     ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_alpha);
 
-    // Scale animation (Pop effect)
     float scale = 0.95f + (0.05f * m_alpha);
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX));
+
+    // Do not render full background/main window if in HUD Editor mode
+    if (m_currentView == MenuView::HUDEditor) {
+        renderHUDEditorToolbar(ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, 40.0f));
+        ImGui::PopStyleVar();
+        return;
+    }
 
     renderBackground();
 
@@ -79,12 +86,11 @@ void MenuManager::render() {
 
     ImVec2 windowSize;
     if (m_currentView == MenuView::Main) {
-        windowSize = ImVec2(300, 350);
+        windowSize = ImVec2(300, 390);
     } else {
         windowSize = ImVec2(800, 600);
     }
 
-    // Apply scale to size
     windowSize.x *= scale;
     windowSize.y *= scale;
 
@@ -106,6 +112,8 @@ void MenuManager::render() {
         case MenuView::Settings:
             renderSettingsView(center, windowSize);
             break;
+        case MenuView::HUDEditor:
+            break;
         }
     }
     ImGui::End();
@@ -122,7 +130,7 @@ void MenuManager::renderBackground() {
 }
 
 void MenuManager::renderMainView(ImVec2 center, ImVec2 size) {
-    float contentHeight = 200.0f;
+    float contentHeight = 250.0f; // Adjusted for new button
     ImGui::SetCursorPosY((size.y - contentHeight) * 0.5f);
 
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
@@ -149,6 +157,13 @@ void MenuManager::renderMainView(ImVec2 center, ImVec2 size) {
     ImGui::Spacing();
 
     ImGui::SetCursorPosX(btnX);
+    if (ImGui::Button("HUD Editor", ImVec2(btnWidth, btnHeight))) {
+        m_currentView = MenuView::HUDEditor;
+    }
+
+    ImGui::Spacing();
+
+    ImGui::SetCursorPosX(btnX);
     if (ImGui::Button("Configuration", ImVec2(btnWidth, btnHeight))) {
         m_currentView = MenuView::Settings;
     }
@@ -161,6 +176,38 @@ void MenuManager::renderMainView(ImVec2 center, ImVec2 size) {
     if (ImGui::Button("Close", ImVec2(btnWidth, btnHeight))) {
         toggle();
     }
+}
+
+void MenuManager::renderHUDEditorToolbar(ImVec2 center) {
+    ImGui::SetNextWindowPos(ImVec2(center.x, 50), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+    ImGui::SetNextWindowSize(ImVec2(300, 80));
+
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.05f, 0.05f, 0.90f));
+
+    if (ImGui::Begin("HUDEditorToolbar", nullptr, flags)) {
+        ImGui::Text("HUD Layout Editor");
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        ImGui::TextDisabled("Drag elements to move them.");
+
+        ImGui::SameLine();
+        float avail = ImGui::GetContentRegionAvail().x;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + avail - 100);
+
+        if (ImGui::Button("Save & Exit", ImVec2(100, 0))) {
+            auto config = HUDManager::instance().saveConfig();
+            SettingsManager::instance().saveToFile(config); // Or just HUD config depending on implementation
+            m_currentView = MenuView::Main;
+        }
+    }
+    ImGui::End();
+
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
 }
 
 void MenuManager::renderFeaturesView(ImVec2 center, ImVec2 size) {
@@ -244,18 +291,6 @@ void MenuManager::renderSettingsView(ImVec2 center, ImVec2 size) {
         FeatureManager::instance().loadConfig(config);
         HUDManager::instance().loadConfig(config);
         NotificationManager::instance().success("Config", "Settings reloaded from disk.");
-    }
-
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
-
-    bool editMode = HUDManager::instance().isEditMode();
-    if (ImGui::Checkbox("HUD Layout Editor", &editMode)) {
-        HUDManager::instance().setEditMode(editMode);
-    }
-    if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Shows grid and allows moving HUD elements.");
     }
 }
 

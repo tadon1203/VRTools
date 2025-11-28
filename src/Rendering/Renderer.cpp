@@ -174,7 +174,8 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    HUDManager::instance().render();
+    bool isEditingHUD = MenuManager::instance().isHUDEditorOpen();
+    HUDManager::instance().render(isEditingHUD);
 
     MenuManager::instance().render();
 

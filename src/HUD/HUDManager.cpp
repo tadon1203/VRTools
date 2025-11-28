@@ -5,7 +5,6 @@
 #include <imgui.h>
 
 #include "Core/Logger.hpp"
-#include "Input/CursorManager.hpp"
 
 HUDManager& HUDManager::instance() {
     static HUDManager inst;
@@ -18,24 +17,19 @@ void HUDManager::initializeAll() {
         comp->initialize();
     }
 }
-void HUDManager::render() {
+
+void HUDManager::render(bool isEditMode) {
     ImDrawList* dl    = ImGui::GetForegroundDrawList();
     ImVec2 screenSize = ImGui::GetIO().DisplaySize;
 
-    if (m_editMode) {
+    if (isEditMode) {
         updateInput();
         drawGrid(dl);
-        dl->AddText(ImVec2(10, 10), ImColor(0, 255, 0), "HUD EDIT MODE (Drag to move)");
-
-        dl->AddLine(
-            ImVec2(screenSize.x * 0.5f, 0), ImVec2(screenSize.x * 0.5f, screenSize.y), ImColor(255, 255, 255, 50));
-        dl->AddLine(
-            ImVec2(0, screenSize.y * 0.5f), ImVec2(screenSize.x, screenSize.y * 0.5f), ImColor(255, 255, 255, 50));
     }
 
     for (const auto& comp : m_components) {
         comp->updatePosition(screenSize);
-        comp->render(dl, m_editMode);
+        comp->render(dl, isEditMode);
     }
 }
 
@@ -51,6 +45,7 @@ void HUDManager::drawGrid(ImDrawList* dl) {
         dl->AddLine(ImVec2(0, y), ImVec2(size.x, y), col);
     }
 }
+
 void HUDManager::updateInput() {
     ImGuiIO& io     = ImGui::GetIO();
     ImVec2 mousePos = io.MousePos;
@@ -102,15 +97,12 @@ void HUDManager::updateInput() {
         }
     }
 }
+
 void HUDManager::loadConfig(const nlohmann::json& root) {
     if (!root.contains("HUD")) {
         return;
     }
     auto& j = root["HUD"];
-
-    if (j.contains("EditMode")) {
-        setEditMode(j["EditMode"]);
-    }
 
     if (j.contains("Components")) {
         for (const auto& comp : m_components) {
@@ -123,7 +115,6 @@ void HUDManager::loadConfig(const nlohmann::json& root) {
 
 nlohmann::json HUDManager::saveConfig() const {
     nlohmann::json root;
-    root["EditMode"] = m_editMode;
 
     nlohmann::json comps;
     for (const auto& comp : m_components) {
@@ -133,17 +124,4 @@ nlohmann::json HUDManager::saveConfig() const {
     }
     root["Components"] = comps;
     return root;
-}
-
-void HUDManager::setEditMode(bool enabled) {
-    if (m_editMode == enabled) {
-        return;
-    }
-    m_editMode = enabled;
-
-    if (m_editMode) {
-        CursorManager::instance().requestUnlock("HUD");
-    } else {
-        CursorManager::instance().releaseUnlock("HUD");
-    }
 }

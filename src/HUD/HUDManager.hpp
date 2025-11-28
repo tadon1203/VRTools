@@ -12,16 +12,13 @@ public:
     static HUDManager& instance();
 
     void initializeAll();
-    void render();
+    void render(bool isEditMode);
 
     template <typename T>
     void registerComponent() {
         static_assert(std::is_base_of_v<HUDComponent, T>, "T must be derived from HUDComponent");
         m_components.push_back(std::make_unique<T>());
     }
-
-    void setEditMode(bool enabled);
-    [[nodiscard]] bool isEditMode() const { return m_editMode; }
 
     void loadConfig(const nlohmann::json& root);
     [[nodiscard]] nlohmann::json saveConfig() const;
@@ -35,7 +32,6 @@ private:
 
     std::vector<std::unique_ptr<HUDComponent>> m_components;
 
-    bool m_editMode  = false;
     float m_gridSize = 20.0f;
 
     HUDComponent* m_draggedComponent = nullptr;
