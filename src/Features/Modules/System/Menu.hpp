@@ -11,6 +11,7 @@ public:
 
     void initialize() override;
     void onRender() override;
+    void onMenuRender() override;
 
 private:
     void renderFeatureSettings(IFeature* feature);

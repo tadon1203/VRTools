@@ -1,13 +1,15 @@
 #include "Renderer.hpp"
 
-#include <imgui.h>
-#include <imgui_impl_dx11.h>
-#include <imgui_impl_win32.h>
 #include <stdexcept>
 #include <string>
 
+#include <imgui.h>
+#include <imgui_impl_dx11.h>
+#include <imgui_impl_win32.h>
+
 #include "Core/Logger.hpp"
 #include "Features/Framework/FeatureManager.hpp"
+#include "Features/HUD/HUDManager.hpp"
 #include "Hooking/HookManager.hpp"
 #include "Hooking/WndProcHook.hpp"
 #include "UI/NotificationManager.hpp"
@@ -170,6 +172,8 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
+
+    HUDManager::instance().render();
 
     FeatureManager::instance().renderAll();
     NotificationManager::instance().render();

@@ -1,7 +1,8 @@
 #include "Core.hpp"
 
 #include "Features/Framework/FeatureManager.hpp"
-#include "Features/Modules/System/LogWindow.hpp"
+#include "Features/HUD/Components/LogComponent.hpp"
+#include "Features/HUD/HUDManager.hpp"
 #include "Features/Modules/System/Menu.hpp"
 #include "Hooking/GameHooks.hpp"
 #include "Hooking/HookManager.hpp"
@@ -44,9 +45,13 @@ void Core::initialize() {
 
         auto& fm = FeatureManager::instance();
         fm.registerFeature<Menu>();
-        fm.registerFeature<LogWindow>();
 
         fm.initializeAll();
+
+        auto& hud = HUDManager::instance();
+        hud.registerComponent<LogComponent>();
+
+        hud.initializeAll();
 
         auto settings = SettingsManager::instance().loadFromFile();
         fm.loadConfig(settings);
@@ -72,8 +77,14 @@ void Core::initialize() {
 void Core::shutdown() {
     Logger::instance().info("Core shutting down...");
 
-    auto settings = FeatureManager::instance().saveConfig();
-    SettingsManager::instance().saveToFile(settings);
+    auto rootJson = FeatureManager::instance().saveConfig();
+
+    auto hudConfig = HUDManager::instance().saveConfig();
+    if (hudConfig.contains("HUD")) {
+        rootJson["HUD"] = hudConfig["HUD"];
+    }
+
+    SettingsManager::instance().saveToFile(rootJson);
 
     HookManager::instance().shutdown();
     Renderer::instance().shutdown();

@@ -20,23 +20,21 @@ BreakTemplateDeclarations: Yes
 ColumnLimit: 120
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex: '^<(yvals|yvals_core)\.h>$'
-    Priority: 10
-  - Regex: '^<__msvc_.*\.hpp>$'
-    Priority: 20
-  - Regex: '^<initguid\.h>$' # <initguid.h> should be included before any header that includes <guiddef.h>
-    Priority: 30
-    SortPriority: 30
-  - Regex: '^<(DbgEng|DbgHelp|Shlwapi|Windows)\.h>$'
-    Priority: 30
-    SortPriority: 31
-  - Regex: '^<winioctl\.h>$'
-    Priority: 30
-    SortPriority: 32
-  - Regex: '\.hpp[>"]$'
-    Priority: 40
-  - Regex: '.*'
-    Priority: 20
+  # third party
+  - Regex: "(imgui|fmt|nlohmann)"
+    Priority: 3
+
+  # c system headers
+  - Regex: '^<.*\.h>'
+    Priority: 1
+
+  # c++ std
+  - Regex: "^<.*>"
+    Priority: 2
+
+  # project
+  - Regex: ".*"
+    Priority: 4
 IndentCaseBlocks: true
 IndentWidth: 4
 IndentWrappedFunctionNames: true
