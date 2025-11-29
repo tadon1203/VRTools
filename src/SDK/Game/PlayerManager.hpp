@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../Unity/Vector3.hpp"
@@ -18,6 +19,9 @@ struct CachedPlayer {
     UnityEngine::Vector3 headScreen; // 2D Head
 
     bool isVisible; // true if Z > 0
+
+    // bone connections
+    std::vector<std::pair<UnityEngine::Vector3, UnityEngine::Vector3>> boneLines;
 };
 
 class PlayerManager {

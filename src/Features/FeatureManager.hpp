@@ -15,6 +15,16 @@ public:
         m_features.push_back(std::make_unique<T>());
     }
 
+    template <typename T>
+    T* getFeature() {
+        for (const auto& feature : m_features) {
+            if (auto* ptr = dynamic_cast<T*>(feature.get())) {
+                return ptr;
+            }
+        }
+        return nullptr;
+    }
+
     void initializeAll();
     void updateAll();
     void renderAll();
@@ -30,8 +40,8 @@ public:
     void onLoadConfig(const nlohmann::json& section) override;
 
 private:
-    FeatureManager()  = default;
-    ~FeatureManager() = default;
+    FeatureManager()           = default;
+    ~FeatureManager() override = default;
 
     std::vector<std::unique_ptr<IFeature>> m_features;
 };

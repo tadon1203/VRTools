@@ -67,7 +67,7 @@ namespace VisualsUtils {
         ImU32 cTR     = getColorAtOffset(s, tTopRight).toU32();
         ImU32 cBR     = getColorAtOffset(s, tBotRight).toU32();
         ImU32 cBL     = getColorAtOffset(s, tBotLeft).toU32();
-        ImU32 cEnd    = getColorAtOffset(s, tEnd).toU32(); // Should match cTL mathematically if looped
+        ImU32 cEnd    = getColorAtOffset(s, tEnd).toU32();
 
         // Top Bar
         dl->AddRectFilledMultiColor(ImVec2(s.x, s.y), ImVec2(s.x + s.w, s.y + s.thickness), colorTL, cTR, cTR, colorTL);

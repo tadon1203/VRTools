@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "../Unity/HumanBodyBones.hpp"
+#include "../Unity/Transform.hpp"
 #include "SDK/Il2Cpp/Structs.hpp"
 
 namespace VRC {
@@ -14,5 +16,8 @@ namespace VRC {
         Il2CppObject* gameObject;
 
         static std::vector<VRCPlayerApi*> getAllPlayers();
+
+        float getAvatarEyeHeightAsMeters();
+        UnityEngine::Transform* getBoneTransform(UnityEngine::HumanBodyBones bone);
     };
 }

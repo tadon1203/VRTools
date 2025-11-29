@@ -14,6 +14,9 @@ public:
     void onLoadConfig(const nlohmann::json& j) override;
     void onSaveConfig(nlohmann::json& j) const override;
 
+    // shit code omg
+    [[nodiscard]] bool isBoneEspEnabled() const { return m_enabled && m_bones; }
+
 private:
     bool m_box2D                   = true;
     VisualsUtils::ColorMode m_mode = VisualsUtils::ColorMode::Rainbow;
@@ -26,4 +29,8 @@ private:
 
     bool m_outline = true;
     bool m_inline  = true;
+
+    // Bone ESP
+    bool m_bones      = false;
+    Color m_boneColor = Color(1.0f, 1.0f, 1.0f, 1.0f);
 };
