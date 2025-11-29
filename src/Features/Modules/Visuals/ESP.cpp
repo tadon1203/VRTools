@@ -1,14 +1,20 @@
 #include "ESP.hpp"
 
-#include <fmt/format.h>
 #include <imgui.h>
 
+#include "ESPComponents/Elements.hpp"
 #include "SDK/Game/PlayerManager.hpp"
 
 ESP::ESP()
     : IFeature(FeatureCategory::Visuals, "ESP") {
     m_customGradient.addStop(0.0f, Color(0.0f, 0.5f, 1.0f));
     m_customGradient.addStop(1.0f, Color(0.0f, 0.5f, 1.0f));
+
+    m_elements.push_back(std::make_unique<BoxElement>());
+    m_elements.push_back(std::make_unique<Box3DElement>());
+    m_elements.push_back(std::make_unique<SkeletonElement>());
+    m_elements.push_back(std::make_unique<NametagElement>());
+    m_elements.push_back(std::make_unique<DistanceElement>());
 }
 
 void ESP::onRender() {
@@ -20,99 +26,95 @@ void ESP::onRender() {
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
     float time     = static_cast<float>(ImGui::GetTime());
 
-    VisualsUtils::VisualsStyle style;
-    style.colorMode      = m_mode;
-    style.primaryColor   = m_mainColor;
-    style.gradient       = m_customGradient;
-    style.animationSpeed = m_speed;
-    style.time           = time;
-    style.thickness      = m_thickness;
-    style.outline        = m_outline;
+    ESPContext ctx;
+    ctx.style = { m_mode, m_mainColor, m_customGradient, m_thickness, m_outline, true, 13.0f, time, m_speed };
 
-    VisualsUtils::VisualsStyle textStyle = style;
-    textStyle.colorMode                  = VisualsUtils::ColorMode::Solid;
-    textStyle.primaryColor               = m_textColor;
+    ctx.textStyle              = ctx.style;
+    ctx.textStyle.colorMode    = VisualsUtils::ColorMode::Solid;
+    ctx.textStyle.primaryColor = m_textColor;
 
-    VisualsUtils::VisualsStyle boneStyle = style;
-    boneStyle.colorMode                  = VisualsUtils::ColorMode::Solid;
-    boneStyle.primaryColor               = m_boneColor;
+    ctx.boneStyle              = ctx.style;
+    ctx.boneStyle.colorMode    = VisualsUtils::ColorMode::Solid;
+    ctx.boneStyle.primaryColor = m_boneColor;
 
     for (const auto& p : players) {
         if (!p.isVisible) {
             continue;
         }
 
-        VisualsUtils::ScreenRect r = { p.rectMin, p.rectMax };
+        // Reset cursors for this player
+        float topY    = p.rectMin.y;
+        float botY    = p.rectMax.y;
+        float leftX   = p.rectMin.x;
+        float rightX  = p.rectMax.x;
+        float centerX = p.rectMin.x + (p.rectMax.x - p.rectMin.x) * 0.5f;
+        float centerY = p.rectMin.y + (p.rectMax.y - p.rectMin.y) * 0.5f;
 
-        if (m_box2D) {
-            VisualsUtils::drawBox2D(dl, r, style);
-        }
-
-        if (m_box3D) {
-            VisualsUtils::ScreenCube cube;
-            bool valid = true;
-            for (int i = 0; i < 8; ++i) {
-                if (p.corners3d[i].x <= -9000) {
-                    valid = false;
-                    break;
-                } // Check validity
-                cube.corners[i] = p.corners3d[i];
+        for (const auto& el : m_elements) {
+            if (!el->isEnabled()) {
+                continue;
             }
-            if (valid) {
-                VisualsUtils::drawBox3D(dl, cube, style);
+
+            ImVec2 size    = el->getSize(p, ctx);
+            ImVec2 drawPos = { 0, 0 };
+
+            switch (el->getAnchor()) {
+            case ESPAnchor::Top:
+                topY -= (size.y + ctx.padding);
+                drawPos = { centerX - size.x * 0.5f, topY };
+                break;
+            case ESPAnchor::Bottom:
+                drawPos = { centerX - size.x * 0.5f, botY + ctx.padding };
+                botY += (size.y + ctx.padding);
+                break;
+            case ESPAnchor::Left:
+                leftX -= (size.x + ctx.padding);
+                drawPos = { leftX, centerY - size.y * 0.5f };
+                break;
+            case ESPAnchor::Right:
+                drawPos = { rightX + ctx.padding, centerY - size.y * 0.5f };
+                rightX += (size.x + ctx.padding);
+                break;
+            case ESPAnchor::Center:
+                drawPos = p.rectMin;
+                break;
             }
-        }
 
-        if (m_bones && !p.bones.empty()) {
-            VisualsUtils::drawSkeleton(dl, p.bones, boneStyle);
-        }
-
-        if (m_nametags) {
-            ImVec2 pos = r.getTopCenter();
-            pos.y -= (textStyle.fontSize + 2.0f);
-            VisualsUtils::drawText(dl, pos, p.name, textStyle);
-        }
-
-        if (m_distance) {
-            std::string d = fmt::format("[{:.0f}m]", p.distance);
-            ImVec2 pos    = r.getBottomCenter();
-            pos.y += 2.0f;
-            VisualsUtils::drawText(dl, pos, d, textStyle);
+            el->render(dl, p, ctx, drawPos);
         }
     }
 }
 
 void ESP::onMenuRender() {
     if (ImGui::BeginTabBar("ESPTabs")) {
-        if (ImGui::BeginTabItem("General")) {
-            ImGui::Checkbox("Box 2D", &m_box2D);
-            ImGui::Checkbox("Box 3D", &m_box3D);
-            ImGui::Checkbox("Bones", &m_bones);
-            ImGui::Checkbox("Nametags", &m_nametags);
-            ImGui::Checkbox("Distance", &m_distance);
+        if (ImGui::BeginTabItem("Elements")) {
+            ImGui::Spacing();
+            ImGui::TextDisabled("Layout Config");
+            ImGui::Separator();
+            for (const auto& el : m_elements) {
+                el->onMenuRender();
+            }
             ImGui::EndTabItem();
         }
 
-        if (ImGui::BeginTabItem("Colors & Style")) {
+        if (ImGui::BeginTabItem("Style")) {
             int modeInt = static_cast<int>(m_mode);
-            if (ImGui::Combo("Main Mode", &modeInt, "Solid\0Rainbow\0Gradient\0")) {
+            if (ImGui::Combo("Mode", &modeInt, "Solid\0Rainbow\0Gradient\0")) {
                 m_mode = static_cast<VisualsUtils::ColorMode>(modeInt);
             }
 
             if (m_mode == VisualsUtils::ColorMode::Solid) {
-                ImGui::ColorEdit4("Main Color", &m_mainColor.r);
+                ImGui::ColorEdit4("Main", &m_mainColor.r);
             } else {
-                ImGui::SliderFloat("Animation Speed", &m_speed, 0.1f, 5.0f);
+                ImGui::SliderFloat("Speed", &m_speed, 0.1f, 5.0f);
             }
 
-            ImGui::SliderFloat("Thickness", &m_thickness, 1.0f, 5.0f);
+            ImGui::SliderFloat("Thick", &m_thickness, 1.0f, 5.0f);
             ImGui::Checkbox("Outline", &m_outline);
 
             ImGui::Separator();
-            ImGui::Text("Overrides");
-            ImGui::ColorEdit4("Bone Color", &m_boneColor.r);
-            ImGui::ColorEdit4("Text Color", &m_textColor.r);
-
+            ImGui::ColorEdit4("Text", &m_textColor.r);
+            ImGui::ColorEdit4("Bones", &m_boneColor.r);
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -122,24 +124,12 @@ void ESP::onMenuRender() {
 void ESP::onLoadConfig(const nlohmann::json& j) {
     IFeature::onLoadConfig(j);
 
-    // Features
-    if (j.contains("Box2D")) {
-        m_box2D = j["Box2D"];
-    }
-    if (j.contains("Box3D")) {
-        m_box3D = j["Box3D"];
-    }
-    if (j.contains("Bones")) {
-        m_bones = j["Bones"];
-    }
-    if (j.contains("Nametags")) {
-        m_nametags = j["Nametags"];
-    }
-    if (j.contains("Distance")) {
-        m_distance = j["Distance"];
+    if (j.contains("Elements")) {
+        for (const auto& el : m_elements) {
+            el->onLoadConfig(j["Elements"]);
+        }
     }
 
-    // Style
     if (j.contains("ColorMode")) {
         m_mode = static_cast<VisualsUtils::ColorMode>(j["ColorMode"]);
     }
@@ -153,7 +143,6 @@ void ESP::onLoadConfig(const nlohmann::json& j) {
         m_outline = j["Outline"];
     }
 
-    // Colors
     if (j.contains("MainColor")) {
         auto c      = j["MainColor"];
         m_mainColor = Color(c[0], c[1], c[2], c[3]);
@@ -171,11 +160,11 @@ void ESP::onLoadConfig(const nlohmann::json& j) {
 void ESP::onSaveConfig(nlohmann::json& j) const {
     IFeature::onSaveConfig(j);
 
-    j["Box2D"]    = m_box2D;
-    j["Box3D"]    = m_box3D;
-    j["Bones"]    = m_bones;
-    j["Nametags"] = m_nametags;
-    j["Distance"] = m_distance;
+    nlohmann::json elems;
+    for (const auto& el : m_elements) {
+        el->onSaveConfig(elems);
+    }
+    j["Elements"] = elems;
 
     j["ColorMode"] = m_mode;
     j["Speed"]     = m_speed;
@@ -185,4 +174,22 @@ void ESP::onSaveConfig(nlohmann::json& j) const {
     j["MainColor"] = { m_mainColor.r, m_mainColor.g, m_mainColor.b, m_mainColor.a };
     j["BoneColor"] = { m_boneColor.r, m_boneColor.g, m_boneColor.b, m_boneColor.a };
     j["TextColor"] = { m_textColor.r, m_textColor.g, m_textColor.b, m_textColor.a };
+}
+
+bool ESP::isBoneEspEnabled() const {
+    for (const auto& el : m_elements) {
+        if (el->getName() == "Skeleton") {
+            return el->isEnabled();
+        }
+    }
+    return false;
+}
+
+bool ESP::isBox3dEnabled() const {
+    for (const auto& el : m_elements) {
+        if (el->getName() == "Box 3D") {
+            return el->isEnabled();
+        }
+    }
+    return false;
 }
