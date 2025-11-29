@@ -22,6 +22,10 @@ namespace Il2Cpp::Exports {
     void (*il2cpp_thread_detach)(Il2CppThread*)                                                 = nullptr;
     Il2CppObject* (*il2cpp_type_get_object)(const Il2CppType*)                                  = nullptr;
     Il2CppString* (*il2cpp_string_new)(const char*)                                             = nullptr;
+    const MethodInfo* (*il2cpp_class_get_methods)(Il2CppClass*, void**)                         = nullptr;
+    const char* (*il2cpp_method_get_name)(const MethodInfo*)                                    = nullptr;
+    const Il2CppType* (*il2cpp_method_get_param)(const MethodInfo*, uint32_t)                   = nullptr;
+    char* (*il2cpp_type_get_name)(const Il2CppType*)                                            = nullptr;
 }
 
 void Il2Cpp::initialize() {
@@ -51,10 +55,14 @@ void Il2Cpp::initialize() {
     il2cpp_domain_get     = reinterpret_cast<decltype(il2cpp_domain_get)>(load("il2cpp_domain_get"));
     il2cpp_domain_get_assemblies =
         reinterpret_cast<decltype(il2cpp_domain_get_assemblies)>(load("il2cpp_domain_get_assemblies"));
-    il2cpp_thread_attach   = reinterpret_cast<decltype(il2cpp_thread_attach)>(load("il2cpp_thread_attach"));
-    il2cpp_thread_detach   = reinterpret_cast<decltype(il2cpp_thread_detach)>(load("il2cpp_thread_detach"));
-    il2cpp_type_get_object = reinterpret_cast<decltype(il2cpp_type_get_object)>(load("il2cpp_type_get_object"));
-    il2cpp_string_new      = reinterpret_cast<decltype(il2cpp_string_new)>(load("il2cpp_string_new"));
+    il2cpp_thread_attach     = reinterpret_cast<decltype(il2cpp_thread_attach)>(load("il2cpp_thread_attach"));
+    il2cpp_thread_detach     = reinterpret_cast<decltype(il2cpp_thread_detach)>(load("il2cpp_thread_detach"));
+    il2cpp_type_get_object   = reinterpret_cast<decltype(il2cpp_type_get_object)>(load("il2cpp_type_get_object"));
+    il2cpp_string_new        = reinterpret_cast<decltype(il2cpp_string_new)>(load("il2cpp_string_new"));
+    il2cpp_class_get_methods = reinterpret_cast<decltype(il2cpp_class_get_methods)>(load("il2cpp_class_get_methods"));
+    il2cpp_method_get_name   = reinterpret_cast<decltype(il2cpp_method_get_name)>(load("il2cpp_method_get_name"));
+    il2cpp_method_get_param  = reinterpret_cast<decltype(il2cpp_method_get_param)>(load("il2cpp_method_get_param"));
+    il2cpp_type_get_name     = reinterpret_cast<decltype(il2cpp_type_get_name)>(load("il2cpp_type_get_name"));
 }
 
 Il2CppClass* Il2Cpp::findClass(const char* assemblyName, const char* namespaze, const char* className) {
@@ -86,8 +94,8 @@ Il2CppClass* Il2Cpp::findClass(const char* assemblyName, const char* namespaze, 
     return foundClass;
 }
 
-const MethodInfo* Il2Cpp::resolveMethod(
-    const char* assemblyName, const char* namespaze, const char* className, const char* methodName, int argsCount) {
+const MethodInfo* Il2Cpp::resolveMethod(const char* assemblyName, const char* namespaze, const char* className,
+    const char* methodName, int argsCount, const char* firstParamType) {
 
     Il2CppClass* klass = findClass(assemblyName, namespaze, className);
     if (!klass) {
@@ -95,14 +103,32 @@ const MethodInfo* Il2Cpp::resolveMethod(
                                  + "' in assembly '" + std::string(assemblyName) + "'.");
     }
 
-    const MethodInfo* method = Exports::il2cpp_class_get_method_from_name(klass, methodName, argsCount);
-    if (!method) {
-        throw std::runtime_error("Failed to resolve method: Could not find method '" + std::string(methodName)
-                                 + "' with " + std::to_string(argsCount) + " arguments in class '"
-                                 + std::string(namespaze) + "." + std::string(className) + "'.");
+    if (firstParamType == nullptr) {
+        const MethodInfo* method = Exports::il2cpp_class_get_method_from_name(klass, methodName, argsCount);
+        if (!method) {
+            throw std::runtime_error("Failed to resolve method: '" + std::string(methodName) + "'");
+        }
+        return method;
     }
 
-    return method;
+    void* iter               = nullptr;
+    const MethodInfo* method = nullptr;
+    while ((method = Exports::il2cpp_class_get_methods(klass, &iter))) {
+        const char* mName = Exports::il2cpp_method_get_name(method);
+        if (mName && std::strcmp(mName, methodName) == 0) {
+            if (Exports::il2cpp_method_get_param_count(method) == argsCount) {
+                const Il2CppType* pType = Exports::il2cpp_method_get_param(method, 0);
+                char* pTypeName         = Exports::il2cpp_type_get_name(pType);
+
+                if (pTypeName && std::string(pTypeName) == firstParamType) {
+                    return method;
+                }
+            }
+        }
+    }
+
+    throw std::runtime_error("Failed to resolve overloaded method: '" + std::string(methodName) + "' with param type '"
+                             + std::string(firstParamType) + "'");
 }
 
 Il2CppObject* Il2Cpp::getSystemType(Il2CppClass* klass) {

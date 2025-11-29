@@ -1,5 +1,6 @@
 #include "Core.hpp"
 
+#include "CrashHandler.hpp"
 #include "Features/FeatureManager.hpp"
 #include "Features/Modules/Visuals/ESP.hpp"
 #include "HUD/Components/LogComponent.hpp"
@@ -36,6 +37,8 @@ bool Core::isRunning() const { return m_isRunning; }
 void Core::initialize() {
     try {
         Logger::instance().info("Core initializing...");
+
+        CrashHandler::instance().initialize();
 
         Il2Cpp::initialize();
         HookManager::instance().initialize();

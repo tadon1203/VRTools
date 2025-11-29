@@ -9,6 +9,6 @@ namespace UnityEngine {
     public:
         [[nodiscard]] Transform* getTransform() const;
 
-        Component* getComponent(const std::string& typeName) const;
+        Component* getComponent(const char* assemblyName, const char* namespaze, const char* className) const;
     };
 }

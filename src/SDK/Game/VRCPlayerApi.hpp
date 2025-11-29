@@ -5,6 +5,7 @@
 #include "../Unity/HumanBodyBones.hpp"
 #include "../Unity/Transform.hpp"
 #include "SDK/Il2Cpp/Structs.hpp"
+#include "SDK/Unity/GameObject.hpp"
 
 namespace VRC {
 
@@ -13,7 +14,7 @@ namespace VRC {
         bool isLocal;
         Il2CppString* displayName;
         int32_t playerId;
-        Il2CppObject* gameObject;
+        UnityEngine::GameObject* gameObject;
 
         static std::vector<VRCPlayerApi*> getAllPlayers();
 

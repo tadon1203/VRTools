@@ -12,8 +12,8 @@ namespace Il2Cpp {
 
     Il2CppClass* findClass(const char* assemblyName, const char* namespaze, const char* className);
 
-    const MethodInfo* resolveMethod(
-        const char* assemblyName, const char* namespaze, const char* className, const char* methodName, int argsCount);
+    const MethodInfo* resolveMethod(const char* assemblyName, const char* namespaze, const char* className,
+        const char* methodName, int argsCount, const char* firstParamType = nullptr);
 
     Il2CppObject* getSystemType(Il2CppClass* klass);
 
@@ -54,6 +54,11 @@ namespace Il2Cpp {
 
         auto instancePtr = const_cast<Il2CppObject*>(static_cast<const Il2CppObject*>(instance));
         return detail::invokeImpl<R>(methodInfo, instancePtr, false, args...);
+    }
+
+    template <typename R, typename... Args>
+    R invoke(const MethodInfo* method, void* instance, Args... args) {
+        return detail::invokeImpl<R>(method, static_cast<Il2CppObject*>(instance), false, args...);
     }
 
     template <typename R, typename... Args>

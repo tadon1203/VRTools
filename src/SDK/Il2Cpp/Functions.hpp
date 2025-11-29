@@ -16,4 +16,8 @@ namespace Il2Cpp::Exports {
     extern void (*il2cpp_thread_detach)(Il2CppThread* thread);
     extern Il2CppObject* (*il2cpp_type_get_object)(const Il2CppType* type);
     extern Il2CppString* (*il2cpp_string_new)(const char* str);
+    extern const MethodInfo* (*il2cpp_class_get_methods)(Il2CppClass* klass, void** iter);
+    extern const char* (*il2cpp_method_get_name)(const MethodInfo* method);
+    extern const Il2CppType* (*il2cpp_method_get_param)(const MethodInfo* method, uint32_t index);
+    extern char* (*il2cpp_type_get_name)(const Il2CppType* type);
 }

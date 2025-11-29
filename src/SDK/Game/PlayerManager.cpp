@@ -69,7 +69,7 @@ void PlayerManager::update() {
     Vector3 localPos = Vector3::Zero();
     if (auto* lp = VRC::Networking::getLocalPlayer()) {
         if (lp->gameObject) {
-            auto* t = static_cast<GameObject*>(lp->gameObject)->getTransform();
+            auto* t = lp->gameObject->getTransform();
             if (t) {
                 localPos = t->get_position();
             }
@@ -84,7 +84,7 @@ void PlayerManager::update() {
             continue;
         }
 
-        auto* go = static_cast<GameObject*>(p->gameObject);
+        auto* go = p->gameObject;
         auto* tr = go->getTransform();
         if (!tr) {
             continue;
@@ -102,7 +102,8 @@ void PlayerManager::update() {
         dp.name      = p->displayName ? p->displayName->toString() : "Player";
 
         // Bounds Logic
-        auto* cc = static_cast<CharacterController*>(go->getComponent("UnityEngine.CharacterController"));
+        auto* cc = static_cast<CharacterController*>(
+            go->getComponent("UnityEngine.PhysicsModule.dll", "UnityEngine", "CharacterController"));
         if (cc) {
             Bounds b  = cc->get_bounds();
             Vector3 c = b.center;

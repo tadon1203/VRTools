@@ -56,4 +56,4 @@ target_include_directories(VRTools PUBLIC
 
 target_compile_definitions(VRTools PRIVATE IMGUI_ENABLE_FREETYPE _USE_MATH_DEFINES)
 
-target_link_libraries(VRTools PRIVATE minhook fmt::fmt nlohmann_json::nlohmann_json d3d11 freetype)
+target_link_libraries(VRTools PRIVATE minhook fmt::fmt nlohmann_json::nlohmann_json d3d11 freetype dbghelp)
