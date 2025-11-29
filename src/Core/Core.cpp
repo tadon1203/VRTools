@@ -70,7 +70,9 @@ void Core::initialize() {
         }
 
         HookManager::instance().enableAll();
+
         Logger::instance().info("Core initialized successfully.");
+        NotificationManager::instance().info("Menu", "Press [INSERT] to open the menu.", 8.0f);
 
     } catch (const std::exception& e) {
         Logger::instance().error("Fatal error: {}", e.what());
