@@ -1,14 +1,22 @@
 #pragma once
-
-#include "Component.hpp"
 #include "Object.hpp"
 #include "Transform.hpp"
 
 namespace UnityEngine {
     class GameObject : public Object {
     public:
-        [[nodiscard]] Transform* getTransform() const;
+        IL2CPP_BINDING("UnityEngine.CoreModule.dll", "UnityEngine", "GameObject");
 
-        Component* getComponent(const char* assemblyName, const char* namespaze, const char* className) const;
+        Transform* getTransform() { return reinterpret_cast<Transform*>(this->call<Il2CppObject*>("get_transform")); }
+
+        template <typename T>
+        T* getComponent() {
+            Il2CppObject* typeObj = T::getStaticType();
+            if (!typeObj) {
+                return nullptr;
+            }
+            auto* res = this->call<Il2CppObject*>("GetComponent", typeObj);
+            return reinterpret_cast<T*>(res);
+        }
     };
 }

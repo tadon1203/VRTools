@@ -6,6 +6,7 @@
 #include "../Unity/CharacterController.hpp"
 #include "../Unity/GameObject.hpp"
 #include "../Unity/Transform.hpp"
+#include "Core/Logger.hpp"
 #include "Features/FeatureManager.hpp"
 #include "Features/Modules/Visuals/ESP.hpp"
 #include "Networking.hpp"
@@ -102,8 +103,7 @@ void PlayerManager::update() {
         dp.name      = p->displayName ? p->displayName->toString() : "Player";
 
         // Bounds Logic
-        auto* cc = static_cast<CharacterController*>(
-            go->getComponent("UnityEngine.PhysicsModule.dll", "UnityEngine", "CharacterController"));
+        auto* cc = go->getComponent<CharacterController>();
         if (cc) {
             Bounds b  = cc->get_bounds();
             Vector3 c = b.center;
@@ -118,7 +118,7 @@ void PlayerManager::update() {
             bool anyVis = false;
 
             for (int i = 0; i < 8; ++i) {
-                Vector3 s = cam->WorldToScreenPoint(corners[i]);
+                Vector3 s = cam->worldToScreenPoint(corners[i]);
                 if (needBox3D) {
                     dp.corners3d[i] = Utils::Math::unityToImGui(s);
                 } else {
@@ -144,7 +144,8 @@ void PlayerManager::update() {
             }
         } else {
             // if no CC
-            Vector3 s = cam->WorldToScreenPoint(pos);
+            Logger::instance().info("no cc");
+            Vector3 s = cam->worldToScreenPoint(pos);
             if (s.z > 0) {
                 dp.isVisible = true;
             }
@@ -155,8 +156,8 @@ void PlayerManager::update() {
                 auto* t1 = p->getBoneTransform(pair.first);
                 auto* t2 = p->getBoneTransform(pair.second);
                 if (t1 && t2) {
-                    Vector3 s1 = cam->WorldToScreenPoint(t1->get_position());
-                    Vector3 s2 = cam->WorldToScreenPoint(t2->get_position());
+                    Vector3 s1 = cam->worldToScreenPoint(t1->get_position());
+                    Vector3 s2 = cam->worldToScreenPoint(t2->get_position());
                     if (s1.z > 0 && s2.z > 0) {
                         dp.bones.emplace_back(Utils::Math::unityToImGui(s1), Utils::Math::unityToImGui(s2));
                     }

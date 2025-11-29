@@ -10,6 +10,10 @@ struct Il2CppDomain {};
 struct Il2CppThread {};
 struct Il2CppType {};
 
+struct MethodInfo {
+    void* methodPointer;
+};
+
 struct Il2CppObject {
     Il2CppClass* klass;
     void* monitor;
@@ -17,10 +21,6 @@ struct Il2CppObject {
 
 struct Il2CppImage {
     const char* name;
-};
-
-struct MethodInfo {
-    void* methodPointer;
 };
 
 struct Il2CppString : Il2CppObject {

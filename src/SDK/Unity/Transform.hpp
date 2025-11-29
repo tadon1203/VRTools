@@ -1,11 +1,12 @@
 #pragma once
-
-#include "Object.hpp"
+#include "Component.hpp"
 #include "Vector3.hpp"
 
 namespace UnityEngine {
-    class Transform : public Object {
+    class Transform : public Component {
     public:
-        [[nodiscard]] Vector3 get_position() const;
+        IL2CPP_BINDING("UnityEngine.CoreModule.dll", "UnityEngine", "Transform");
+
+        Vector3 get_position() { return this->call<Vector3>("get_position"); }
     };
 }

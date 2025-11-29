@@ -1,24 +1,28 @@
 #pragma once
 
-#include <vector>
-
-#include "../Unity/HumanBodyBones.hpp"
-#include "../Unity/Transform.hpp"
+#include "SDK/Il2Cpp/Binding.hpp"
 #include "SDK/Il2Cpp/Structs.hpp"
 #include "SDK/Unity/GameObject.hpp"
+#include "SDK/Unity/HumanBodyBones.hpp"
+#include "SDK/Unity/Transform.hpp"
 
 namespace VRC {
-
-    class alignas(8) VRCPlayerApi : public Il2CppObject {
+    class VRCPlayerApi : public Il2CppObject {
     public:
+        IL2CPP_BINDING("VRCSDKBase.dll", "VRC.SDKBase", "VRCPlayerApi");
+
         bool isLocal;
         Il2CppString* displayName;
         int32_t playerId;
         UnityEngine::GameObject* gameObject;
 
-        static std::vector<VRCPlayerApi*> getAllPlayers();
+        static std::vector<VRCPlayerApi*> getAllPlayers() {
+            auto* list = callStatic<Il2CppList<VRCPlayerApi*>*>("get_AllPlayers");
+            return list ? list->toVector() : std::vector<VRCPlayerApi*>{};
+        }
 
-        float getAvatarEyeHeightAsMeters();
-        UnityEngine::Transform* getBoneTransform(UnityEngine::HumanBodyBones bone);
+        UnityEngine::Transform* getBoneTransform(UnityEngine::HumanBodyBones bone) {
+            return reinterpret_cast<UnityEngine::Transform*>(this->call<Il2CppObject*>("GetBoneTransform", bone));
+        }
     };
 }

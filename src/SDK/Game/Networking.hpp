@@ -1,10 +1,12 @@
 #pragma once
-
 #include "VRCPlayerApi.hpp"
 
 namespace VRC {
+    // we dont need inheritance
     class Networking {
     public:
-        static VRCPlayerApi* getLocalPlayer();
+        IL2CPP_BINDING("VRCSDKBase.dll", "VRC.SDKBase", "Networking");
+
+        static VRCPlayerApi* getLocalPlayer() { return callStatic<VRCPlayerApi*>("get_LocalPlayer"); }
     };
 }
