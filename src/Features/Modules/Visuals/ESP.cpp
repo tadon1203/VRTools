@@ -24,16 +24,22 @@ void ESP::onRender() {
     }
 
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
-    float time     = static_cast<float>(ImGui::GetTime());
+    auto time      = static_cast<float>(ImGui::GetTime());
 
     ESPContext ctx;
-    ctx.style = { m_mode, m_mainColor, m_customGradient, m_thickness, m_outline, true, 13.0f, time, m_speed };
 
-    ctx.textStyle              = ctx.style;
+    ctx.styleBox2D = { m_mode, m_box2DColor, m_customGradient, m_thickness, m_outline, true, 13.0f, time, m_speed };
+
+    ctx.styleBox3D              = ctx.styleBox2D;
+    ctx.styleBox3D.colorMode    = VisualsUtils::ColorMode::Solid;
+    ctx.styleBox3D.primaryColor = m_box3DColor;
+    ctx.styleBox3D.outline      = false;
+
+    ctx.textStyle              = ctx.styleBox2D;
     ctx.textStyle.colorMode    = VisualsUtils::ColorMode::Solid;
     ctx.textStyle.primaryColor = m_textColor;
 
-    ctx.boneStyle              = ctx.style;
+    ctx.boneStyle              = ctx.styleBox2D;
     ctx.boneStyle.colorMode    = VisualsUtils::ColorMode::Solid;
     ctx.boneStyle.primaryColor = m_boneColor;
 
@@ -42,7 +48,6 @@ void ESP::onRender() {
             continue;
         }
 
-        // Reset cursors for this player
         float topY    = p.rectMin.y;
         float botY    = p.rectMax.y;
         float leftX   = p.rectMin.x;
@@ -99,22 +104,26 @@ void ESP::onMenuRender() {
 
         if (ImGui::BeginTabItem("Style")) {
             int modeInt = static_cast<int>(m_mode);
-            if (ImGui::Combo("Mode", &modeInt, "Solid\0Rainbow\0Gradient\0")) {
+            if (ImGui::Combo("Master Mode", &modeInt, "Solid\0Rainbow\0Gradient\0")) {
                 m_mode = static_cast<VisualsUtils::ColorMode>(modeInt);
             }
 
-            if (m_mode == VisualsUtils::ColorMode::Solid) {
-                ImGui::ColorEdit4("Main", &m_mainColor.r);
-            } else {
-                ImGui::SliderFloat("Speed", &m_speed, 0.1f, 5.0f);
-            }
-
             ImGui::SliderFloat("Thick", &m_thickness, 1.0f, 5.0f);
-            ImGui::Checkbox("Outline", &m_outline);
+            ImGui::Checkbox("Global Outline", &m_outline);
 
             ImGui::Separator();
+            ImGui::Text("Colors");
+
+            if (m_mode == VisualsUtils::ColorMode::Solid) {
+                ImGui::ColorEdit4("Box 2D", &m_box2DColor.r);
+            } else {
+                ImGui::SliderFloat("Rainbow Speed", &m_speed, 0.1f, 5.0f);
+            }
+
+            ImGui::ColorEdit4("Box 3D (Solid)", &m_box3DColor.r);
+            ImGui::ColorEdit4("Skeleton", &m_boneColor.r);
             ImGui::ColorEdit4("Text", &m_textColor.r);
-            ImGui::ColorEdit4("Bones", &m_boneColor.r);
+
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -143,9 +152,13 @@ void ESP::onLoadConfig(const nlohmann::json& j) {
         m_outline = j["Outline"];
     }
 
-    if (j.contains("MainColor")) {
-        auto c      = j["MainColor"];
-        m_mainColor = Color(c[0], c[1], c[2], c[3]);
+    if (j.contains("Box2DColor")) {
+        auto c       = j["Box2DColor"];
+        m_box2DColor = Color(c[0], c[1], c[2], c[3]);
+    }
+    if (j.contains("Box3DColor")) {
+        auto c       = j["Box3DColor"];
+        m_box3DColor = Color(c[0], c[1], c[2], c[3]);
     }
     if (j.contains("BoneColor")) {
         auto c      = j["BoneColor"];
@@ -171,9 +184,10 @@ void ESP::onSaveConfig(nlohmann::json& j) const {
     j["Thickness"] = m_thickness;
     j["Outline"]   = m_outline;
 
-    j["MainColor"] = { m_mainColor.r, m_mainColor.g, m_mainColor.b, m_mainColor.a };
-    j["BoneColor"] = { m_boneColor.r, m_boneColor.g, m_boneColor.b, m_boneColor.a };
-    j["TextColor"] = { m_textColor.r, m_textColor.g, m_textColor.b, m_textColor.a };
+    j["Box2DColor"] = { m_box2DColor.r, m_box2DColor.g, m_box2DColor.b, m_box2DColor.a };
+    j["Box3DColor"] = { m_box3DColor.r, m_box3DColor.g, m_box3DColor.b, m_box3DColor.a };
+    j["BoneColor"]  = { m_boneColor.r, m_boneColor.g, m_boneColor.b, m_boneColor.a };
+    j["TextColor"]  = { m_textColor.r, m_textColor.g, m_textColor.b, m_textColor.a };
 }
 
 bool ESP::isBoneEspEnabled() const {

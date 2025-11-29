@@ -3,13 +3,12 @@
 #include <algorithm>
 
 #include "../Unity/Camera.hpp"
-#include "../Unity/CharacterController.hpp"
 #include "../Unity/GameObject.hpp"
 #include "../Unity/Transform.hpp"
-#include "Core/Logger.hpp"
 #include "Features/FeatureManager.hpp"
 #include "Features/Modules/Visuals/ESP.hpp"
 #include "Networking.hpp"
+#include "SDK/Unity/Bounds.hpp"
 #include "Utils/Math.hpp"
 #include "VRCHelper.hpp"
 #include "VRCPlayerApi.hpp"
@@ -28,10 +27,8 @@ void PlayerManager::update() {
         return;
     }
 
-    auto* esp        = FeatureManager::instance().getFeature<ESP>();
-    bool calcVisuals = esp && esp->isEnabled();
-
-    if (!calcVisuals) {
+    auto* esp = FeatureManager::instance().getFeature<ESP>();
+    if (!esp || !esp->isEnabled()) {
         std::lock_guard lock(m_mutex);
         m_drawList.clear();
         return;
@@ -91,10 +88,11 @@ void PlayerManager::update() {
             continue;
         }
 
-        DrawPlayer dp;
+        DrawPlayer dp{};
+
         dp.isLocal = p->isLocal;
         if (dp.isLocal) {
-            continue; // Skip local for ESP
+            continue;
         }
 
         dp.isVisible = false;
@@ -102,10 +100,32 @@ void PlayerManager::update() {
         dp.distance  = pos.distance(localPos);
         dp.name      = p->displayName ? p->displayName->toString() : "Player";
 
-        // Bounds Logic
-        auto* cc = go->getComponent<CharacterController>();
-        if (cc) {
-            Bounds b  = cc->get_bounds();
+        Bounds b;
+        bool foundBounds = false;
+
+        auto* head  = p->getBoneTransform(HumanBodyBones::Head);
+        auto* footL = p->getBoneTransform(HumanBodyBones::LeftFoot);
+        auto* footR = p->getBoneTransform(HumanBodyBones::RightFoot);
+
+        if (head && (footL || footR)) {
+            Vector3 headPos = head->get_position();
+            Vector3 footPos = footL ? footL->get_position() : footR->get_position();
+
+            if (footL && footR) {
+                Vector3 f2 = footR->get_position();
+                footPos    = (footPos + f2) / 2.0f;
+            }
+
+            float height   = std::abs(headPos.y - footPos.y);
+            Vector3 center = (headPos + footPos) / 2.0f;
+            center.y += 0.1f; // Adjust slightly up
+
+            b.center    = center;
+            b.extents   = Vector3(0.4f, (height / 2.0f) + 0.2f, 0.4f);
+            foundBounds = true;
+        }
+
+        if (foundBounds) {
             Vector3 c = b.center;
             Vector3 e = b.extents;
 
@@ -133,7 +153,7 @@ void PlayerManager::update() {
                     minY     = std::min(minY, g.y);
                     maxY     = std::max(maxY, g.y);
                 } else if (needBox3D) {
-                    dp.corners3d[i] = { -9999, -9999 }; // Invalid
+                    dp.corners3d[i] = { -9999, -9999 };
                 }
             }
 
@@ -143,11 +163,13 @@ void PlayerManager::update() {
                 dp.isVisible = true;
             }
         } else {
-            // if no CC
-            Logger::instance().info("no cc");
+            // No bones found
             Vector3 s = cam->worldToScreenPoint(pos);
             if (s.z > 0) {
                 dp.isVisible = true;
+                ImVec2 scr   = Utils::Math::unityToImGui(s);
+                dp.rectMin   = { scr.x - 10, scr.y - 20 };
+                dp.rectMax   = { scr.x + 10, scr.y + 20 };
             }
         }
 

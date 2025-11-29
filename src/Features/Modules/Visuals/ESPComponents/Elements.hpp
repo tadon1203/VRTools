@@ -9,13 +9,11 @@ public:
     BoxElement()
         : IESPElement("Box 2D", ESPAnchor::Center) {}
 
-    ImVec2 getSize(const DrawPlayer& p, const ESPContext& ctx) override {
-        return { 0, 0 }; // Doesn't affect layout flow
-    }
+    ImVec2 getSize(const DrawPlayer& p, const ESPContext& ctx) override { return { 0, 0 }; }
 
     void render(ImDrawList* dl, const DrawPlayer& p, const ESPContext& ctx, ImVec2 pos) override {
         VisualsUtils::ScreenRect r = { p.rectMin, p.rectMax };
-        VisualsUtils::drawBox2D(dl, r, ctx.style);
+        VisualsUtils::drawBox2D(dl, r, ctx.styleBox2D); // Use Box2D Style
     }
 };
 
@@ -39,7 +37,7 @@ public:
             cube.corners[i] = p.corners3d[i];
         }
         if (valid) {
-            VisualsUtils::drawBox3D(dl, cube, ctx.style);
+            VisualsUtils::drawBox3D(dl, cube, ctx.styleBox3D); // Use Box3D Style
         }
     }
 };
@@ -55,7 +53,7 @@ public:
 
     void render(ImDrawList* dl, const DrawPlayer& p, const ESPContext& ctx, ImVec2 pos) override {
         if (!p.bones.empty()) {
-            VisualsUtils::drawSkeleton(dl, p.bones, ctx.boneStyle);
+            VisualsUtils::drawSkeleton(dl, p.bones, ctx.boneStyle); // Use Bone Style
         }
     }
 };
