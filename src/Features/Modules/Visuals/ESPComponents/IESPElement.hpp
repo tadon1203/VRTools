@@ -2,36 +2,72 @@
 
 #include <string>
 
+#include <imgui.h>
 #include <nlohmann/json.hpp>
 
+#include "../VisualsUtils.hpp"
 #include "ESPDef.hpp"
 #include "SDK/Game/PlayerManager.hpp"
+
+enum class ElementType { Geometry, Text };
 
 class IESPElement {
 public:
     virtual ~IESPElement() = default;
 
-    explicit IESPElement(std::string name, ESPAnchor defaultAnchor = ESPAnchor::Top)
+    explicit IESPElement(std::string name, ElementType type, ESPAnchor defaultAnchor = ESPAnchor::Top)
         : m_name(std::move(name))
-        , m_anchor(defaultAnchor) {}
+        , m_type(type)
+        , m_anchor(defaultAnchor) {
 
-    virtual ImVec2 getSize(const DrawPlayer& player, const ESPContext& ctx) = 0;
+        // Default Gradient
+        m_style.gradient.addStop(0.0f, Color(0.0f, 0.5f, 1.0f));
+        m_style.gradient.addStop(1.0f, Color(1.0f, 0.5f, 0.0f));
+    }
 
+    virtual ImVec2 getSize(const DrawPlayer& player, const ESPContext& ctx)                          = 0;
     virtual void render(ImDrawList* dl, const DrawPlayer& player, const ESPContext& ctx, ImVec2 pos) = 0;
 
     virtual void onMenuRender() {
-        ImGui::Checkbox(m_name.c_str(), &m_enabled);
-        if (m_anchor != ESPAnchor::Center) {
-            ImGui::SameLine();
-            ImGui::PushID(this);
+        if (ImGui::TreeNode(m_name.c_str())) {
 
-            int a = static_cast<int>(m_anchor);
-            ImGui::SetNextItemWidth(80);
+            ImGui::Checkbox("Enabled", &m_enabled);
 
-            if (ImGui::Combo("##Anchor", &a, "Top\0Bottom\0Left\0Right")) {
-                m_anchor = static_cast<ESPAnchor>(a);
+            if (m_anchor != ESPAnchor::Center) {
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(100);
+                int a = static_cast<int>(m_anchor);
+                if (ImGui::Combo("Anchor", &a, "Top\0Bottom\0Left\0Right")) {
+                    m_anchor = static_cast<ESPAnchor>(a);
+                }
             }
-            ImGui::PopID();
+
+            ImGui::Separator();
+
+            ImGui::TextDisabled("Style Settings");
+
+            int modeInt = static_cast<int>(m_style.colorMode);
+            if (ImGui::Combo("Mode", &modeInt, "Solid\0Rainbow\0Gradient")) {
+                m_style.colorMode = static_cast<VisualsUtils::ColorMode>(modeInt);
+            }
+
+            if (m_style.colorMode == VisualsUtils::ColorMode::Solid) {
+                ImGui::ColorEdit4("Color", &m_style.primaryColor.r);
+            } else {
+                ImGui::SliderFloat("Anim Speed", &m_style.animationSpeed, 0.1f, 5.0f);
+            }
+
+            if (m_type == ElementType::Geometry) {
+                ImGui::SliderFloat("Thickness", &m_style.thickness, 1.0f, 5.0f);
+                ImGui::Checkbox("Outline", &m_style.outline);
+            }
+
+            if (m_type == ElementType::Text) {
+                ImGui::SliderFloat("Font Size", &m_style.fontSize, 8.0f, 24.0f);
+                ImGui::Checkbox("Text Outline", &m_style.textOutline);
+            }
+
+            ImGui::TreePop();
         }
     }
 
@@ -44,11 +80,38 @@ public:
             if (s.contains("Anchor")) {
                 m_anchor = static_cast<ESPAnchor>(s["Anchor"]);
             }
+
+            if (s.contains("Mode")) {
+                m_style.colorMode = static_cast<VisualsUtils::ColorMode>(s["Mode"]);
+            }
+            if (s.contains("Color")) {
+                auto c               = s["Color"];
+                m_style.primaryColor = Color(c[0], c[1], c[2], c[3]);
+            }
+            if (s.contains("Speed")) {
+                m_style.animationSpeed = s["Speed"];
+            }
+            if (s.contains("Thickness")) {
+                m_style.thickness = s["Thickness"];
+            }
+            if (s.contains("Outline")) {
+                m_style.outline = s["Outline"];
+            }
+            if (s.contains("FontSize")) {
+                m_style.fontSize = s["FontSize"];
+            }
+            if (s.contains("TextOutline")) {
+                m_style.textOutline = s["TextOutline"];
+            }
         }
     }
 
     virtual void onSaveConfig(nlohmann::json& j) const {
-        j[m_name] = { { "Enabled", m_enabled }, { "Anchor", m_anchor } };
+        j[m_name] = { { "Enabled", m_enabled }, { "Anchor", m_anchor }, { "Mode", m_style.colorMode },
+            { "Color",
+                { m_style.primaryColor.r, m_style.primaryColor.g, m_style.primaryColor.b, m_style.primaryColor.a } },
+            { "Speed", m_style.animationSpeed }, { "Thickness", m_style.thickness }, { "Outline", m_style.outline },
+            { "FontSize", m_style.fontSize }, { "TextOutline", m_style.textOutline } };
     }
 
     [[nodiscard]] bool isEnabled() const { return m_enabled; }
@@ -57,6 +120,9 @@ public:
 
 protected:
     std::string m_name;
+    ElementType m_type;
     ESPAnchor m_anchor;
     bool m_enabled = true;
+
+    VisualsUtils::VisualsStyle m_style;
 };
