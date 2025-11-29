@@ -1,13 +1,15 @@
 #include "PlayerManager.hpp"
 
-#include <map>
+#include <algorithm>
 
 #include "../Unity/Camera.hpp"
+#include "../Unity/CharacterController.hpp"
 #include "../Unity/GameObject.hpp"
-#include "../Unity/HumanBodyBones.hpp"
 #include "../Unity/Transform.hpp"
 #include "Features/FeatureManager.hpp"
 #include "Features/Modules/Visuals/ESP.hpp"
+#include "Networking.hpp"
+#include "Utils/Math.hpp"
 #include "VRCHelper.hpp"
 #include "VRCPlayerApi.hpp"
 
@@ -21,123 +23,153 @@ PlayerManager& PlayerManager::instance() {
 void PlayerManager::update() {
     if (!VRC::isInWorld()) {
         std::lock_guard lock(m_mutex);
-        m_players.clear();
+        m_drawList.clear();
         return;
     }
 
-    auto* camera = Camera::get_main();
-    if (!camera) {
+    auto* esp        = FeatureManager::instance().getFeature<ESP>();
+    bool calcVisuals = esp && esp->isEnabled();
+
+    if (!calcVisuals) {
+        std::lock_guard lock(m_mutex);
+        m_drawList.clear();
         return;
     }
 
-    bool calcBones = false;
-    if (auto* esp = FeatureManager::instance().getFeature<ESP>()) {
-        calcBones = esp->isBoneEspEnabled();
+    auto* cam = Camera::get_main();
+    if (!cam) {
+        return;
     }
-
-    std::vector<VRC::VRCPlayerApi*> gamePlayers = VRC::VRCPlayerApi::getAllPlayers();
-    std::vector<CachedPlayer> tempCache;
-    tempCache.reserve(gamePlayers.size());
 
     static const std::vector<std::pair<HumanBodyBones, HumanBodyBones>> bonePairs = {
         { HumanBodyBones::Head, HumanBodyBones::Neck },
         { HumanBodyBones::Neck, HumanBodyBones::Chest },
         { HumanBodyBones::Chest, HumanBodyBones::Spine },
         { HumanBodyBones::Spine, HumanBodyBones::Hips },
-
         { HumanBodyBones::Chest, HumanBodyBones::LeftShoulder },
         { HumanBodyBones::LeftShoulder, HumanBodyBones::LeftUpperArm },
         { HumanBodyBones::LeftUpperArm, HumanBodyBones::LeftLowerArm },
         { HumanBodyBones::LeftLowerArm, HumanBodyBones::LeftHand },
-
         { HumanBodyBones::Chest, HumanBodyBones::RightShoulder },
         { HumanBodyBones::RightShoulder, HumanBodyBones::RightUpperArm },
         { HumanBodyBones::RightUpperArm, HumanBodyBones::RightLowerArm },
         { HumanBodyBones::RightLowerArm, HumanBodyBones::RightHand },
-
         { HumanBodyBones::Hips, HumanBodyBones::LeftUpperLeg },
         { HumanBodyBones::LeftUpperLeg, HumanBodyBones::LeftLowerLeg },
         { HumanBodyBones::LeftLowerLeg, HumanBodyBones::LeftFoot },
-
         { HumanBodyBones::Hips, HumanBodyBones::RightUpperLeg },
         { HumanBodyBones::RightUpperLeg, HumanBodyBones::RightLowerLeg },
         { HumanBodyBones::RightLowerLeg, HumanBodyBones::RightFoot },
     };
 
-    for (auto* player : gamePlayers) {
-        if (!player || !player->gameObject) {
+    auto gamePlayers = VRC::VRCPlayerApi::getAllPlayers();
+    std::vector<DrawPlayer> tempDraw;
+    tempDraw.reserve(gamePlayers.size());
+
+    Vector3 localPos = Vector3::Zero();
+    if (auto* lp = VRC::Networking::getLocalPlayer()) {
+        if (lp->gameObject) {
+            auto* t = static_cast<GameObject*>(lp->gameObject)->getTransform();
+            if (t) {
+                localPos = t->get_position();
+            }
+        }
+    }
+
+    bool needBones = esp->isBoneEspEnabled();
+    bool needBox3D = esp->isBox3dEnabled();
+
+    for (auto* p : gamePlayers) {
+        if (!p || !p->gameObject) {
             continue;
         }
 
-        CachedPlayer p;
-        p.id      = player->playerId;
-        p.isLocal = player->isLocal;
-
-        if (player->displayName) {
-            p.displayName = player->displayName->toString();
-        } else {
-            p.displayName = "Unknown";
-        }
-
-        auto* go        = reinterpret_cast<UnityEngine::GameObject*>(player->gameObject);
-        auto* transform = go->getTransform();
-        if (!transform) {
+        auto* go = static_cast<GameObject*>(p->gameObject);
+        auto* tr = go->getTransform();
+        if (!tr) {
             continue;
         }
 
-        p.position = transform->get_position();
-
-        float eyeHeight = player->getAvatarEyeHeightAsMeters();
-        if (eyeHeight < 0.2f) {
-            eyeHeight = 1.6f;
+        DrawPlayer dp;
+        dp.isLocal = p->isLocal;
+        if (dp.isLocal) {
+            continue; // Skip local for ESP
         }
-        p.headPosition = p.position + Vector3(0, eyeHeight, 0);
 
-        p.rootScreen = camera->WorldToScreenPoint(p.position);
-        p.headScreen = camera->WorldToScreenPoint(p.headPosition);
+        dp.isVisible = false;
+        Vector3 pos  = tr->get_position();
+        dp.distance  = pos.distance(localPos);
+        dp.name      = p->displayName ? p->displayName->toString() : "Player";
 
-        p.isVisible = (p.rootScreen.z > 0 && p.headScreen.z > 0);
+        // Bounds Logic
+        auto* cc = static_cast<CharacterController*>(go->getComponent("UnityEngine.CharacterController"));
+        if (cc) {
+            Bounds b  = cc->get_bounds();
+            Vector3 c = b.center;
+            Vector3 e = b.extents;
 
-        if (calcBones && p.isVisible && !p.isLocal) {
-            std::map<HumanBodyBones, Transform*> boneTransforms;
+            Vector3 corners[8] = { { c.x - e.x, c.y - e.y, c.z - e.z }, { c.x + e.x, c.y - e.y, c.z - e.z },
+                { c.x + e.x, c.y - e.y, c.z + e.z }, { c.x - e.x, c.y - e.y, c.z + e.z },
+                { c.x - e.x, c.y + e.y, c.z - e.z }, { c.x + e.x, c.y + e.y, c.z - e.z },
+                { c.x + e.x, c.y + e.y, c.z + e.z }, { c.x - e.x, c.y + e.y, c.z + e.z } };
 
-            auto getBone = [&](HumanBodyBones b) -> Transform* {
-                if (boneTransforms.count(b)) {
-                    return boneTransforms[b];
+            float minX = FLT_MAX, minY = FLT_MAX, maxX = -FLT_MAX, maxY = -FLT_MAX;
+            bool anyVis = false;
+
+            for (int i = 0; i < 8; ++i) {
+                Vector3 s = cam->WorldToScreenPoint(corners[i]);
+                if (needBox3D) {
+                    dp.corners3d[i] = Utils::Math::unityToImGui(s);
+                } else {
+                    dp.corners3d[i] = { -1, -1 };
                 }
-                Transform* t      = player->getBoneTransform(b);
-                boneTransforms[b] = t;
-                return t;
-            };
 
+                if (s.z > 0) {
+                    anyVis   = true;
+                    ImVec2 g = Utils::Math::unityToImGui(s);
+                    minX     = std::min(minX, g.x);
+                    maxX     = std::max(maxX, g.x);
+                    minY     = std::min(minY, g.y);
+                    maxY     = std::max(maxY, g.y);
+                } else if (needBox3D) {
+                    dp.corners3d[i] = { -9999, -9999 }; // Invalid
+                }
+            }
+
+            if (anyVis) {
+                dp.rectMin   = { minX, minY };
+                dp.rectMax   = { maxX, maxY };
+                dp.isVisible = true;
+            }
+        } else {
+            // if no CC
+            Vector3 s = cam->WorldToScreenPoint(pos);
+            if (s.z > 0) {
+                dp.isVisible = true;
+            }
+        }
+
+        if (dp.isVisible && needBones) {
             for (const auto& pair : bonePairs) {
-                Transform* t1 = getBone(pair.first);
-                Transform* t2 = getBone(pair.second);
-
+                auto* t1 = p->getBoneTransform(pair.first);
+                auto* t2 = p->getBoneTransform(pair.second);
                 if (t1 && t2) {
-                    Vector3 pos1 = t1->get_position();
-                    Vector3 pos2 = t2->get_position();
-
-                    Vector3 s1 = camera->WorldToScreenPoint(pos1);
-                    Vector3 s2 = camera->WorldToScreenPoint(pos2);
-
+                    Vector3 s1 = cam->WorldToScreenPoint(t1->get_position());
+                    Vector3 s2 = cam->WorldToScreenPoint(t2->get_position());
                     if (s1.z > 0 && s2.z > 0) {
-                        p.boneLines.emplace_back(s1, s2);
+                        dp.bones.emplace_back(Utils::Math::unityToImGui(s1), Utils::Math::unityToImGui(s2));
                     }
                 }
             }
         }
-
-        tempCache.push_back(p);
+        tempDraw.push_back(dp);
     }
 
-    {
-        std::lock_guard lock(m_mutex);
-        m_players = std::move(tempCache);
-    }
+    std::lock_guard lock(m_mutex);
+    m_drawList = std::move(tempDraw);
 }
 
-std::vector<CachedPlayer> PlayerManager::getPlayers() {
+std::vector<DrawPlayer> PlayerManager::getDrawPlayers() {
     std::lock_guard lock(m_mutex);
-    return m_players;
+    return m_drawList;
 }

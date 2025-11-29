@@ -8,6 +8,7 @@
 #include "FeatureCategory.hpp"
 #include "SDK/Game/Photon/EventData.hpp"
 #include "SDK/Game/Photon/SendOptions.hpp"
+#include "SDK/Game/PlayerManager.hpp"
 #include "UI/NotificationManager.hpp"
 
 class IFeature {
@@ -39,8 +40,9 @@ public:
             m_enabled = j["Enabled"];
         }
     }
-
     virtual void onSaveConfig(nlohmann::json& j) const { j["Enabled"] = m_enabled; }
+
+    virtual bool shouldShowInMenu() const { return true; }
 
     [[nodiscard]] bool isEnabled() const { return m_enabled; }
     [[nodiscard]] FeatureCategory getCategory() const { return m_category; }

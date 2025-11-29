@@ -15,4 +15,5 @@ namespace Il2Cpp::Exports {
     extern Il2CppThread* (*il2cpp_thread_attach)(Il2CppDomain* domain);
     extern void (*il2cpp_thread_detach)(Il2CppThread* thread);
     extern Il2CppObject* (*il2cpp_type_get_object)(const Il2CppType* type);
+    extern Il2CppString* (*il2cpp_string_new)(const char* str);
 }

@@ -1,10 +1,10 @@
 #include "Il2Cpp.hpp"
 
+#include <Windows.h>
+
 #include <map>
 #include <string_view>
 #include <tuple>
-
-#include <Windows.h>
 
 using ClassCacheKey = std::tuple<std::string_view, std::string_view, std::string_view>;
 static std::map<ClassCacheKey, Il2CppClass*> g_classCache;
@@ -21,6 +21,7 @@ namespace Il2Cpp::Exports {
     Il2CppThread* (*il2cpp_thread_attach)(Il2CppDomain*)                                        = nullptr;
     void (*il2cpp_thread_detach)(Il2CppThread*)                                                 = nullptr;
     Il2CppObject* (*il2cpp_type_get_object)(const Il2CppType*)                                  = nullptr;
+    Il2CppString* (*il2cpp_string_new)(const char*)                                             = nullptr;
 }
 
 void Il2Cpp::initialize() {
@@ -53,6 +54,7 @@ void Il2Cpp::initialize() {
     il2cpp_thread_attach   = reinterpret_cast<decltype(il2cpp_thread_attach)>(load("il2cpp_thread_attach"));
     il2cpp_thread_detach   = reinterpret_cast<decltype(il2cpp_thread_detach)>(load("il2cpp_thread_detach"));
     il2cpp_type_get_object = reinterpret_cast<decltype(il2cpp_type_get_object)>(load("il2cpp_type_get_object"));
+    il2cpp_string_new      = reinterpret_cast<decltype(il2cpp_string_new)>(load("il2cpp_string_new"));
 }
 
 Il2CppClass* Il2Cpp::findClass(const char* assemblyName, const char* namespaze, const char* className) {
@@ -110,3 +112,5 @@ Il2CppObject* Il2Cpp::getSystemType(Il2CppClass* klass) {
     const Il2CppType* type = Exports::il2cpp_class_get_type(klass);
     return Exports::il2cpp_type_get_object(type);
 }
+
+Il2CppString* Il2Cpp::newString(const char* str) { return Exports::il2cpp_string_new(str); }

@@ -6,6 +6,9 @@
 void FeaturesMenu::initialize() {
     const auto& features = FeatureManager::instance().getFeatures();
     for (const auto& feature : features) {
+        if (!feature->shouldShowInMenu()) {
+            continue;
+        }
         m_featuresByCategory[feature->getCategory()].push_back(feature.get());
     }
 

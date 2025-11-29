@@ -17,6 +17,8 @@ namespace Il2Cpp {
 
     Il2CppObject* getSystemType(Il2CppClass* klass);
 
+    Il2CppString* newString(const char* str);
+
     namespace detail {
         template <typename R, typename... Args>
         R invokeImpl(const MethodInfo* method, Il2CppObject* instance, bool isStatic, Args... args) {
