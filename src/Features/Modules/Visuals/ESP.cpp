@@ -20,7 +20,6 @@ void ESP::onRender() {
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
     float time     = static_cast<float>(ImGui::GetTime());
 
-    // Prepare Styles...
     VisualsUtils::VisualsStyle style;
     style.colorMode      = m_mode;
     style.primaryColor   = m_mainColor;
