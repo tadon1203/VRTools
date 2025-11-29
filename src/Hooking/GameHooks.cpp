@@ -84,14 +84,27 @@ void GameHooks::setupCursorHooks() {
 }
 
 void GameHooks::hookUpdate(void* instance) {
-    InputManager::instance().update();
+    static bool firstRun = true;
+    if (firstRun) {
+        Logger::instance().info("GameHooks: First Update tick started.");
+    }
 
-    PlayerManager::instance().update();
+    try {
+        InputManager::instance().update();
+        PlayerManager::instance().update();
+        FeatureManager::instance().updateAll();
+        NotificationManager::instance().update();
+        CursorManager::instance().update();
+    } catch (const std::exception& e) {
+        Logger::instance().error("GameHooks: Exception in Update loop: {}", e.what());
+    } catch (...) {
+        Logger::instance().error("GameHooks: Unknown exception in Update loop.");
+    }
 
-    FeatureManager::instance().updateAll();
-    NotificationManager::instance().update();
-
-    CursorManager::instance().update();
+    if (firstRun) {
+        Logger::instance().info("GameHooks: First Update tick finished.");
+        firstRun = false;
+    }
 
     if (m_originalUpdate) {
         m_originalUpdate(instance);

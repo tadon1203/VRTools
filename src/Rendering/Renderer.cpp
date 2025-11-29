@@ -12,6 +12,8 @@
 #include "HUD/HUDManager.hpp"
 #include "Hooking/HookManager.hpp"
 #include "Hooking/WndProcHook.hpp"
+#include "UI/Fonts/Inter.hpp"
+#include "UI/Fonts/NotoSansCJK.hpp"
 #include "UI/Menu/MenuManager.hpp"
 #include "UI/NotificationManager.hpp"
 
@@ -125,6 +127,8 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
     auto& self = instance();
 
     if (!self.m_isInitialized) {
+        Logger::instance().info("Renderer: Initializing DX11/ImGui...");
+
         if (SUCCEEDED(pSwapChain->GetDevice(__uuidof(ID3D11Device), reinterpret_cast<void**>(&self.m_device)))) {
             self.m_device->GetImmediateContext(&self.m_context);
 
@@ -137,26 +141,23 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
             self.m_device->CreateRenderTargetView(pBackBuffer, nullptr, &self.m_renderTargetView);
             pBackBuffer->Release();
 
-            ImGui::CreateContext();
-            ImGuiIO& io = ImGui::GetIO();
+            Logger::instance().info("Renderer: Device and RTV created.");
 
-            char windir[MAX_PATH];
-            GetWindowsDirectoryA(windir, MAX_PATH);
-            const std::string fontPath = std::string(windir) + "\\Fonts\\";
+            ImGui::CreateContext();
+            ImGuiIO& io                                  = ImGui::GetIO();
+            io.IniFilename                               = nullptr;
+            ImGui::GetStyle().CircleTessellationMaxError = 0.1f;
+
+            Logger::instance().info("Renderer: Loading fonts...");
 
             ImFontConfig font_config;
 
-            io.Fonts->AddFontFromFileTTF((fontPath + "segoeui.ttf").c_str(), 18.0f, &font_config);
+            io.Fonts->AddFontFromMemoryCompressedTTF(Inter_compressed_data, Inter_compressed_size, 18.0f, &font_config);
 
             font_config.MergeMode = true;
 
-            io.Fonts->AddFontFromFileTTF((fontPath + "meiryo.ttc").c_str(), 18.0f, &font_config);
-            io.Fonts->AddFontFromFileTTF((fontPath + "msyh.ttc").c_str(), 18.0f, &font_config);
-            io.Fonts->AddFontFromFileTTF((fontPath + "malgun.ttf").c_str(), 18.0f, &font_config);
-            io.Fonts->AddFontFromFileTTF((fontPath + "LeelawUI.ttf").c_str(), 18.0f, &font_config);
-
-            ImGui::GetStyle().CircleTessellationMaxError = 0.1f;
-            io.IniFilename                               = nullptr;
+            io.Fonts->AddFontFromMemoryCompressedTTF(
+                NotoSansCJK_compressed_data, NotoSansCJK_compressed_size, 18.0f, &font_config);
 
             ImGui_ImplWin32_Init(self.m_windowHandle);
             ImGui_ImplDX11_Init(self.m_device, self.m_context);
@@ -166,8 +167,14 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
             });
 
             self.m_isInitialized = true;
-            Logger::instance().info("ImGui initialized.");
+            Logger::instance().info("Renderer: ImGui initialized successfully.");
+        } else {
+            Logger::instance().error("Renderer: Failed to get Device!");
         }
+    }
+
+    if (!self.m_isInitialized) {
+        return m_originalPresent(pSwapChain, SyncInterval, Flags);
     }
 
     ImGui_ImplDX11_NewFrame();
