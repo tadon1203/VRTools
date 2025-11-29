@@ -23,10 +23,12 @@ public:
         ImGui::Checkbox(m_name.c_str(), &m_enabled);
         if (m_anchor != ESPAnchor::Center) {
             ImGui::SameLine();
-            ImGui::PushID(m_name.c_str());
+            ImGui::PushID(this);
+
             int a = static_cast<int>(m_anchor);
             ImGui::SetNextItemWidth(80);
-            if (ImGui::Combo("", &a, "Top\0Bottom\0Left\0Right")) {
+
+            if (ImGui::Combo("##Anchor", &a, "Top\0Bottom\0Left\0Right")) {
                 m_anchor = static_cast<ESPAnchor>(a);
             }
             ImGui::PopID();
