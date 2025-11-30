@@ -20,6 +20,10 @@ private:
     static HRESULT WINAPI hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
     static HRESULT(WINAPI* m_originalPresent)(IDXGISwapChain*, UINT, UINT);
 
+    static HRESULT WINAPI hookResizeBuffers(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height,
+        DXGI_FORMAT NewFormat, UINT SwapChainFlags);
+    static HRESULT(WINAPI* m_originalResizeBuffers)(IDXGISwapChain*, UINT, UINT, UINT, DXGI_FORMAT, UINT);
+
     bool onWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     bool m_isInitialized = false;

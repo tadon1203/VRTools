@@ -19,7 +19,8 @@
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-HRESULT(WINAPI* Renderer::m_originalPresent)(IDXGISwapChain*, UINT, UINT) = nullptr;
+HRESULT(WINAPI* Renderer::m_originalPresent)(IDXGISwapChain*, UINT, UINT)                                = nullptr;
+HRESULT(WINAPI* Renderer::m_originalResizeBuffers)(IDXGISwapChain*, UINT, UINT, UINT, DXGI_FORMAT, UINT) = nullptr;
 
 Renderer& Renderer::instance() {
     static Renderer inst;
@@ -69,6 +70,7 @@ void Renderer::initialize() {
 
     void** vtable        = *reinterpret_cast<void***>(swapChain);
     void* presentAddress = vtable[8];
+    void* resizeAddress  = vtable[13];
 
     swapChain->Release();
     device->Release();
@@ -78,7 +80,11 @@ void Renderer::initialize() {
 
     HookManager::instance().createHook(
         "DXGIPresent", presentAddress, &hookPresent, reinterpret_cast<void**>(&m_originalPresent));
-    Logger::instance().info("DXGI::Present hooked successfully.");
+
+    HookManager::instance().createHook(
+        "DXGIResizeBuffers", resizeAddress, &hookResizeBuffers, reinterpret_cast<void**>(&m_originalResizeBuffers));
+
+    Logger::instance().info("DXGI hooks initialized.");
 }
 
 void Renderer::shutdown() {
@@ -87,6 +93,11 @@ void Renderer::shutdown() {
         ImGui_ImplWin32_Shutdown();
         ImGui::DestroyContext();
         m_isInitialized = false;
+    }
+    // FIX: Release RTV on shutdown
+    if (m_renderTargetView) {
+        m_renderTargetView->Release();
+        m_renderTargetView = nullptr;
     }
 }
 
@@ -124,6 +135,21 @@ bool Renderer::onWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return false;
 }
 
+// FIX: Implement ResizeBuffers Hook
+HRESULT Renderer::hookResizeBuffers(
+    IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags) {
+    auto& self = instance();
+
+    // Release the RTV before resizing, otherwise it fails
+    if (self.m_renderTargetView) {
+        self.m_context->OMSetRenderTargets(0, nullptr, nullptr);
+        self.m_renderTargetView->Release();
+        self.m_renderTargetView = nullptr;
+    }
+
+    return m_originalResizeBuffers(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+}
+
 HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
     auto& self = instance();
 
@@ -137,12 +163,7 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
             pSwapChain->GetDesc(&desc);
             self.m_windowHandle = desc.OutputWindow;
 
-            ID3D11Texture2D* pBackBuffer;
-            pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(&pBackBuffer));
-            self.m_device->CreateRenderTargetView(pBackBuffer, nullptr, &self.m_renderTargetView);
-            pBackBuffer->Release();
-
-            Logger::instance().info("Renderer: Device and RTV created.");
+            Logger::instance().info("Renderer: Device retrieved.");
 
             ImGui::CreateContext();
             ImGuiIO& io                                  = ImGui::GetIO();
@@ -152,11 +173,8 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
             Logger::instance().info("Renderer: Loading fonts...");
 
             ImFontConfig font_config;
-
             io.Fonts->AddFontFromMemoryCompressedTTF(Inter_compressed_data, Inter_compressed_size, 18.0f, &font_config);
-
             font_config.MergeMode = true;
-
             io.Fonts->AddFontFromMemoryCompressedTTF(
                 NotoSansCJK_compressed_data, NotoSansCJK_compressed_size, 18.0f, &font_config);
 
@@ -171,10 +189,19 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
             Logger::instance().info("Renderer: ImGui initialized successfully.");
         } else {
             Logger::instance().error("Renderer: Failed to get Device!");
+            return m_originalPresent(pSwapChain, SyncInterval, Flags);
         }
     }
 
-    if (!self.m_isInitialized) {
+    if (!self.m_renderTargetView) {
+        ID3D11Texture2D* pBackBuffer = nullptr;
+        if (SUCCEEDED(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(&pBackBuffer)))) {
+            self.m_device->CreateRenderTargetView(pBackBuffer, nullptr, &self.m_renderTargetView);
+            pBackBuffer->Release();
+        }
+    }
+
+    if (!self.m_isInitialized || !self.m_renderTargetView) {
         return m_originalPresent(pSwapChain, SyncInterval, Flags);
     }
 
