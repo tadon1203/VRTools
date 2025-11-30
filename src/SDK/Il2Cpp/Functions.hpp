@@ -26,7 +26,9 @@
     X(FieldInfo*, il2cpp_class_get_fields, (Il2CppClass * klass, void** iter))                                      \
     X(const char*, il2cpp_field_get_name, (FieldInfo * field))                                                      \
     X(const Il2CppType*, il2cpp_method_get_return_type, (const MethodInfo* method))                                 \
-    X(Il2CppClass*, il2cpp_class_from_type, (const Il2CppType* type))
+    X(Il2CppClass*, il2cpp_class_from_type, (const Il2CppType* type))                                               \
+    X(const char*, il2cpp_class_get_name, (Il2CppClass * klass))
+
 
 namespace Il2Cpp::Exports {
 #define DO_API_DECL(R, N, A) extern R(*N) A;

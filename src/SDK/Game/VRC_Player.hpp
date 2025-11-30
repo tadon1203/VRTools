@@ -12,18 +12,18 @@ namespace VRC {
             static Il2CppClass* klass = nullptr;
             if (!klass) {
                 klass = Il2Cpp::findClassByField("Assembly-CSharp", "_laserSelectRegion");
-                if (!klass) {
-                    Logger::instance().error("Failed to resolve VRC.Player!");
-                }
             }
             return klass;
         }
 
         static Il2CppObject* getStaticType() {
             static Il2CppObject* type = nullptr;
-            if (!type && getStaticClass()) {
+            if (!type) {
                 auto* k = getStaticClass();
                 type    = Il2Cpp::Exports::il2cpp_type_get_object(Il2Cpp::Exports::il2cpp_class_get_type(k));
+                if (!type) {
+                    throw std::runtime_error("VRC_Player: Failed to get Static Type Object.");
+                }
             }
             return type;
         }
@@ -33,15 +33,7 @@ namespace VRC {
 
             if (!getterMethod) {
                 getterMethod = Il2Cpp::resolveMethodByReturnType(getStaticClass(), Core::APIUser::getStaticClass());
-                if (!getterMethod) {
-                    Logger::instance().error("Failed to resolve APIUser getter!");
-                }
             }
-
-            if (!getterMethod) {
-                return nullptr;
-            }
-
             return Il2Cpp::invoke<Core::APIUser*>(getterMethod, this);
         }
 
@@ -49,10 +41,8 @@ namespace VRC {
             if (!go) {
                 return nullptr;
             }
+
             Il2CppObject* type = getStaticType();
-            if (!type) {
-                return nullptr;
-            }
             return reinterpret_cast<VRC_Player*>(go->call<Il2CppObject*>("GetComponent", type));
         }
     };

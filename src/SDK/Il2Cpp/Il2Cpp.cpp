@@ -20,13 +20,13 @@ namespace Il2Cpp::Exports {
 void Il2Cpp::initialize() {
     HMODULE gameAssembly = GetModuleHandleA("GameAssembly.dll");
     if (!gameAssembly) {
-        throw std::runtime_error("GameAssembly.dll not found.");
+        throw std::runtime_error("Critical Error: GameAssembly.dll not found in process.");
     }
 
     auto load = [&](const char* name) {
         auto addr = GetProcAddress(gameAssembly, name);
         if (!addr) {
-            throw std::runtime_error(std::string("Failed to load Il2Cpp function: ") + name);
+            throw std::runtime_error(fmt::format("Il2Cpp Import Error: Failed to load function '{}'", name));
         }
         return addr;
     };
@@ -58,6 +58,12 @@ Il2CppClass* Il2Cpp::findClass(const char* assemblyName, const char* namespaze, 
             }
         }
     }
+
+    if (!foundClass) {
+        throw std::runtime_error(fmt::format(
+            "Il2Cpp Error: Failed to find class '{}::{}' in assembly '{}'", namespaze, className, assemblyName));
+    }
+
     g_classCache[cacheKey] = foundClass;
     return foundClass;
 }
@@ -71,7 +77,6 @@ Il2CppClass* Il2Cpp::findClassByField(const char* assemblyName, const char* fiel
         const Il2CppAssembly* assembly = assemblies[i];
         const Il2CppImage* image       = Exports::il2cpp_assembly_get_image(assembly);
 
-        // Simple check for assembly name containment
         std::string_view imgName(image->name);
         if (imgName.find(assemblyName) == std::string_view::npos) {
             continue;
@@ -93,18 +98,24 @@ Il2CppClass* Il2Cpp::findClassByField(const char* assemblyName, const char* fiel
             }
         }
     }
-    return nullptr;
+
+    throw std::runtime_error(
+        fmt::format("Il2Cpp Error: Failed to find class by field '{}' in assembly '{}'", fieldName, assemblyName));
 }
 
 const MethodInfo* Il2Cpp::resolveMethod(Il2CppClass* klass, const char* methodName, int argsCount) {
     if (!klass) {
-        return nullptr;
+        // Should catch logic errors where a previous findClass might have been bypassed (unlikely with new exceptions)
+        throw std::runtime_error(
+            fmt::format("Il2Cpp Error: Attempted to resolve method '{}' on a nullptr class.", methodName));
     }
+
     const MethodInfo* method = Exports::il2cpp_class_get_method_from_name(klass, methodName, argsCount);
     if (method) {
         return method;
     }
 
+    // Fallback search
     void* iter = nullptr;
     while ((method = Exports::il2cpp_class_get_methods(klass, &iter))) {
         const char* mName = Exports::il2cpp_method_get_name(method);
@@ -114,7 +125,11 @@ const MethodInfo* Il2Cpp::resolveMethod(Il2CppClass* klass, const char* methodNa
             }
         }
     }
-    return nullptr;
+
+    throw std::runtime_error(
+        fmt::format("Il2Cpp Error: Method '{}' (args: {}) not found in class '{}'", methodName, argsCount,
+            Exports::il2cpp_class_get_name(klass) ? Exports::il2cpp_type_get_name(Exports::il2cpp_class_get_type(klass))
+                                                  : "Unknown"));
 }
 
 const MethodInfo* Il2Cpp::resolveMethod(
@@ -124,12 +139,12 @@ const MethodInfo* Il2Cpp::resolveMethod(
 
 const MethodInfo* Il2Cpp::resolveMethodByReturnType(Il2CppClass* klass, Il2CppClass* returnType, int argsCount) {
     if (!klass || !returnType) {
-        return nullptr;
+        throw std::runtime_error("Il2Cpp Error: resolveMethodByReturnType called with nullptr class or returnType.");
     }
 
     const Il2CppType* targetType = Exports::il2cpp_class_get_type(returnType);
     if (!targetType) {
-        return nullptr;
+        throw std::runtime_error("Il2Cpp Error: Failed to get type from returnType class.");
     }
 
     void* iter = nullptr;
@@ -148,6 +163,14 @@ const MethodInfo* Il2Cpp::resolveMethodByReturnType(Il2CppClass* klass, Il2CppCl
             return method;
         }
     }
-    return nullptr;
+
+    throw std::runtime_error("Il2Cpp Error: Failed to find method by return type matching.");
 }
-Il2CppString* Il2Cpp::newString(const char* str) { return Exports::il2cpp_string_new(str); }
+
+Il2CppString* Il2Cpp::newString(const char* str) {
+    auto* s = Exports::il2cpp_string_new(str);
+    if (!s) {
+        throw std::runtime_error("Il2Cpp Error: Failed to create new string.");
+    }
+    return s;
+}

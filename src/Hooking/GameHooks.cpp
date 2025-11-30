@@ -22,31 +22,21 @@ void (*GameHooks::m_originalSetLockState)(UnityEngine::CursorLockMode) = nullptr
 void (*GameHooks::m_originalSetVisible)(bool)                          = nullptr;
 
 void GameHooks::initialize() {
-    try {
-        setupMainLoopHook();
-        setupNetworkEventHook();
-        setupRaiseEventHook();
-        setupCursorHooks();
-        Logger::instance().info("Game hooks initialized.");
-    } catch (const std::exception& e) {
-        Logger::instance().error("Failed to initialize game hooks: {}", e.what());
-    }
-}
+    setupMainLoopHook();
+    setupNetworkEventHook();
+    setupRaiseEventHook();
+    setupCursorHooks();
 
+    Logger::instance().info("Game hooks initialized successfully.");
+}
 void GameHooks::setupMainLoopHook() {
     const MethodInfo* updateMethod = Il2Cpp::resolveMethod("VRC.Udon.dll", "VRC.Udon", "UdonManager", "Update", 0);
-    if (!updateMethod) {
-        throw std::runtime_error("Failed to find update method.");
-    }
 
     HookManager::instance().createHook("MainLoopUpdate", updateMethod->methodPointer, &hookUpdate, &m_originalUpdate);
 }
 
 void GameHooks::setupNetworkEventHook() {
     const uintptr_t onEventAddress = Utils::findPattern("GameAssembly.dll", "40 55 56 57 41 56 48 8D 6C 24 F8");
-    if (!onEventAddress) {
-        throw std::runtime_error("Could not find NetworkManager::OnEvent pattern.");
-    }
 
     HookManager::instance().createHook(
         "NetworkManager_OnEvent", reinterpret_cast<void*>(onEventAddress), &hookOnEvent, &m_originalOnEvent);
@@ -55,9 +45,6 @@ void GameHooks::setupNetworkEventHook() {
 void GameHooks::setupRaiseEventHook() {
     const uintptr_t raiseEventAddress =
         Utils::findPattern("GameAssembly.dll", "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 88");
-    if (!raiseEventAddress) {
-        throw std::runtime_error("Could not find PhotonNetwork::RaiseEvent pattern.");
-    }
 
     HookManager::instance().createHook(
         "PhotonNetwork_RaiseEvent", reinterpret_cast<void*>(raiseEventAddress), &hookRaiseEvent, &m_originalRaiseEvent);
@@ -66,15 +53,9 @@ void GameHooks::setupRaiseEventHook() {
 void GameHooks::setupCursorHooks() {
     const MethodInfo* setLockStateMethod =
         Il2Cpp::resolveMethod("UnityEngine.CoreModule.dll", "UnityEngine", "Cursor", "set_lockState", 1);
-    if (!setLockStateMethod) {
-        throw std::runtime_error("Failed to find Cursor::set_lockState.");
-    }
 
     const MethodInfo* setVisibleMethod =
         Il2Cpp::resolveMethod("UnityEngine.CoreModule.dll", "UnityEngine", "Cursor", "set_visible", 1);
-    if (!setVisibleMethod) {
-        throw std::runtime_error("Failed to find Cursor::set_visible.");
-    }
 
     HookManager::instance().createHook(
         "Cursor_set_lockState", setLockStateMethod->methodPointer, &hookSetLockState, &m_originalSetLockState);
@@ -82,7 +63,6 @@ void GameHooks::setupCursorHooks() {
     HookManager::instance().createHook(
         "Cursor_set_visible", setVisibleMethod->methodPointer, &hookSetVisible, &m_originalSetVisible);
 }
-
 void GameHooks::hookUpdate(void* instance) {
     static bool firstRun = true;
     if (firstRun) {

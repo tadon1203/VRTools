@@ -1,20 +1,24 @@
 #pragma once
 
 #include <Psapi.h>
+#include <Windows.h>
+
+#include <stdexcept>
 #include <vector>
 
-#include <Windows.h>
+#include <fmt/core.h>
 
 namespace Utils {
     inline uintptr_t findPattern(const char* moduleName, const char* pattern) {
         HMODULE hModule = GetModuleHandleA(moduleName);
         if (!hModule) {
-            return 0;
+            throw std::runtime_error(fmt::format("Pattern Scan Error: Module '{}' not found.", moduleName));
         }
 
         MODULEINFO moduleInfo;
         if (!GetModuleInformation(GetCurrentProcess(), hModule, &moduleInfo, sizeof(MODULEINFO))) {
-            return 0;
+            throw std::runtime_error(
+                fmt::format("Pattern Scan Error: Failed to get info for module '{}'.", moduleName));
         }
 
         auto base      = reinterpret_cast<uintptr_t>(moduleInfo.lpBaseOfDll);
@@ -51,6 +55,7 @@ namespace Utils {
             }
         }
 
-        return 0;
+        throw std::runtime_error(
+            fmt::format("Pattern Scan Error: Failed to find pattern '{}' in module '{}'", pattern, moduleName));
     }
 }
