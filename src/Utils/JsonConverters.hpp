@@ -4,7 +4,6 @@
 #include <nlohmann/json.hpp>
 
 #include "ColorUtils.hpp"
-#include "Features/Modules/Visuals/ESPComponents/ESPDef.hpp"
 #include "Features/Modules/Visuals/VisualsUtils.hpp"
 #include "HUD/HUDDef.hpp"
 
@@ -71,10 +70,6 @@ namespace VisualsUtils {
     NLOHMANN_JSON_SERIALIZE_ENUM(ColorMode, { { ColorMode::Solid, "Solid" }, { ColorMode::Rainbow, "Rainbow" },
                                                 { ColorMode::Gradient, "Gradient" }, { ColorMode::Rank, "Rank" } })
 }
-
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    ESPAnchor, { { ESPAnchor::Top, "Top" }, { ESPAnchor::Bottom, "Bottom" }, { ESPAnchor::Left, "Left" },
-                   { ESPAnchor::Right, "Right" }, { ESPAnchor::Center, "Center" } })
 
 NLOHMANN_JSON_SERIALIZE_ENUM(
     HUDAnchor, { { HUDAnchor::TopLeft, "TopLeft" }, { HUDAnchor::TopRight, "TopRight" },

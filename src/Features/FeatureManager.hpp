@@ -5,6 +5,7 @@
 
 #include "Core/Settings/ISettingsHandler.hpp"
 #include "IFeature.hpp"
+#include "SDK/Game/Photon/SendOptions.hpp"
 
 class FeatureManager : public ISettingsHandler {
 public:
@@ -26,6 +27,12 @@ public:
     }
 
     void initializeAll();
+
+    // Dispatchers
+    void onUpdate();
+    void onRender();
+    bool onPhotonEvent(Photon::EventData* eventData);
+    bool onRaiseEvent(uint8_t code, Il2CppObject* content, void* raiseEventOptions, Photon::SendOptions sendOptions);
 
     [[nodiscard]] const std::vector<std::unique_ptr<IFeature>>& getFeatures() const { return m_features; }
 

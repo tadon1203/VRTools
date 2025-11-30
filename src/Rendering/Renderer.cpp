@@ -7,7 +7,6 @@
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
 
-#include "Core/Events/RenderEvents.hpp"
 #include "Core/Logger.hpp"
 #include "Features/FeatureManager.hpp"
 #include "HUD/HUDManager.hpp"
@@ -28,6 +27,7 @@ Renderer& Renderer::instance() {
 }
 
 void Renderer::initialize() {
+    // ... (Window creation code remains unchanged) ...
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, DefWindowProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr,
         nullptr, nullptr, "DummyWindowClass", nullptr };
     RegisterClassEx(&wc);
@@ -187,8 +187,7 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
 
     MenuManager::instance().render();
 
-    RenderEvent e;
-    EventManager::instance().fire(e);
+    FeatureManager::instance().onRender();
 
     NotificationManager::instance().render();
 

@@ -1,7 +1,5 @@
 #include "GameHooks.hpp"
 
-#include "Core/Events/GameEvents.hpp"
-#include "Core/Events/NetworkEvents.hpp"
 #include "Core/Logger.hpp"
 #include "Features/FeatureManager.hpp"
 #include "Hooking/HookManager.hpp"
@@ -69,8 +67,7 @@ void GameHooks::hookUpdate(void* instance) {
         NotificationManager::instance().update();
         CursorManager::instance().update();
 
-        FrameUpdateEvent e;
-        EventManager::instance().fire(e);
+        FeatureManager::instance().onUpdate();
 
     } catch (const std::exception& e) {
         Logger::instance().error("GameHooks: Exception in Update loop: {}", e.what());
@@ -85,11 +82,8 @@ void GameHooks::hookOnEvent(void* instance, void* eventDataPtr) {
     auto eventData = static_cast<Photon::EventData*>(eventDataPtr);
 
     if (eventData) {
-        PhotonEventEvent e(eventData);
-        EventManager::instance().fire(e);
-
-        if (e.isCancelled()) {
-            return;
+        if (!FeatureManager::instance().onPhotonEvent(eventData)) {
+            return; // Cancelled
         }
     }
 
@@ -101,11 +95,8 @@ void GameHooks::hookOnEvent(void* instance, void* eventDataPtr) {
 bool GameHooks::hookRaiseEvent(
     uint8_t eventCode, Il2CppObject* content, void* raiseEventOptions, Photon::SendOptions sendOptions) {
 
-    RaiseEventEvent e(eventCode, content, raiseEventOptions, sendOptions);
-    EventManager::instance().fire(e);
-
-    if (e.isCancelled()) {
-        return false;
+    if (!FeatureManager::instance().onRaiseEvent(eventCode, content, raiseEventOptions, sendOptions)) {
+        return false; // Cancelled
     }
 
     if (m_originalRaiseEvent) {

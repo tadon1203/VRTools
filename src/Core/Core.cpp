@@ -2,7 +2,7 @@
 
 #include "CrashHandler.hpp"
 #include "Features/FeatureManager.hpp"
-#include "Features/Modules/Visuals/ESP.hpp"
+#include "Features/Modules/Visuals/PlayerESP.hpp"
 #include "HUD/Components/LogComponent.hpp"
 #include "HUD/HUDManager.hpp"
 #include "Hooking/GameHooks.hpp"
@@ -48,7 +48,7 @@ void Core::initialize() {
         GameHooks::initialize();
 
         auto& fm = FeatureManager::instance();
-        fm.registerFeature<ESP>();
+        fm.registerFeature<PlayerESP>();
         fm.initializeAll();
 
         auto& hud = HUDManager::instance();

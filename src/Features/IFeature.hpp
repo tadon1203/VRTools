@@ -1,16 +1,21 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
-#include "Core/Events/EventManager.hpp"
 #include "Core/Settings/SettingsGroup.hpp"
 #include "FeatureCategory.hpp"
+#include "SDK/Game/Photon/SendOptions.hpp"
 #include "UI/NotificationManager.hpp"
+
+namespace Photon {
+    struct EventData;
+    struct SendOptions;
+}
+struct Il2CppObject;
 
 class IFeature {
 public:
-    virtual ~IFeature() { unsubscribeAll(); }
+    virtual ~IFeature() = default;
 
     explicit IFeature(FeatureCategory category, std::string name, int keybind = 0)
         : m_category(category)
@@ -21,9 +26,23 @@ public:
     }
 
     virtual void initialize() {}
+
+    // Lifecycle
     virtual void onEnable() {}
     virtual void onDisable() {}
+
+    // Loop
+    virtual void onUpdate() {}
+    virtual void onRender() {}
     virtual void onMenuRender() {}
+
+    // Network
+    virtual bool onPhotonEvent(Photon::EventData* eventData) { return true; }
+    virtual bool onRaiseEvent(
+        uint8_t code, Il2CppObject* content, void* raiseEventOptions, Photon::SendOptions sendOptions) {
+        return true;
+    }
+
     virtual void onKeybind() { toggle(); }
 
     [[nodiscard]] virtual bool shouldShowInMenu() const { return true; }
@@ -44,7 +63,6 @@ public:
             onEnable();
             NotificationManager::instance().success(m_name, "Enabled");
         } else {
-            unsubscribeAll();
             onDisable();
             NotificationManager::instance().info(m_name, "Disabled");
         }
@@ -53,26 +71,11 @@ public:
     void toggle() { setEnabled(!m_enabled); }
 
 protected:
-    template <typename EventType>
-    void registerEvent(std::function<void(EventType&)> callback) {
-        ListenerID id = EventManager::instance().subscribe<EventType>(callback);
-        m_listeners.push_back(id);
-    }
-
     bool m_enabled = false;
     SettingsGroup m_settings;
 
 private:
-    void unsubscribeAll() {
-        auto& em = EventManager::instance();
-        for (auto id : m_listeners) {
-            em.unsubscribe(id);
-        }
-        m_listeners.clear();
-    }
-
     const FeatureCategory m_category;
     const std::string m_name;
     int m_keybind;
-    std::vector<ListenerID> m_listeners;
 };

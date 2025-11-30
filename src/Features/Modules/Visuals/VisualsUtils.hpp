@@ -2,7 +2,6 @@
 
 #include <array>
 #include <string>
-#include <vector>
 
 #include <imgui.h>
 
@@ -41,8 +40,6 @@ namespace VisualsUtils {
     struct ScreenRect {
         ImVec2 min;
         ImVec2 max;
-        [[nodiscard]] ImVec2 getTopCenter() const { return { min.x + (max.x - min.x) * 0.5f, min.y }; }
-        [[nodiscard]] ImVec2 getBottomCenter() const { return { min.x + (max.x - min.x) * 0.5f, max.y }; }
     };
 
     struct ScreenCube {
@@ -51,15 +48,12 @@ namespace VisualsUtils {
 
     inline void drawBox2D(ImDrawList* dl, const ScreenRect& rect, const VisualsStyle& style) {
         if (style.outline) {
-            // Draw slightly larger black box behind
             dl->AddRect(rect.min, rect.max, ImColor(0, 0, 0, 255), 0.0f, 0, style.thickness + 2.0f);
         }
 
         if (style.colorMode == ColorMode::Solid) {
             dl->AddRect(rect.min, rect.max, style.getColor().toU32(), 0.0f, 0, style.thickness);
         } else {
-            // waving color
-
             float t   = style.thickness;
             ImVec2 tl = rect.min;
             ImVec2 br = rect.max;
@@ -72,44 +66,59 @@ namespace VisualsUtils {
             ImU32 c_bl = style.getColor(0.75f).toU32();
 
             dl->AddRectFilledMultiColor(tl, ImVec2(tr.x, tr.y + t), c_tl, c_tr, c_tr, c_tl);
-
             dl->AddRectFilledMultiColor(ImVec2(tr.x - t, tr.y), br, c_tr, c_tr, c_br, c_br);
-
             dl->AddRectFilledMultiColor(ImVec2(bl.x, bl.y - t), br, c_bl, c_br, c_br, c_bl);
-
             dl->AddRectFilledMultiColor(tl, ImVec2(bl.x + t, bl.y), c_tl, c_tl, c_bl, c_bl);
         }
     }
 
-    inline void drawBox3D(ImDrawList* dl, const ScreenCube& cube, const VisualsStyle& style) {
-        static constexpr std::pair<int, int> lines[] = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, { 4, 5 }, { 5, 6 },
-            { 6, 7 }, { 7, 4 }, { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 } };
+    inline void drawBox3D(
+        ImDrawList* dl, const ScreenCube& cube, const VisualsStyle& style, bool fill = false, ImU32 fillColor = 0) {
+        static constexpr std::pair<int, int> edges[] = {
+            { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, // Bottom
+            { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 }, // Top
+            { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 } // Sides
+        };
+
+        // 6 faces for filling
+        static constexpr int faces[6][4] = {
+            { 0, 1, 2, 3 }, // Bottom
+            { 4, 5, 6, 7 }, // Top
+            { 0, 1, 5, 4 }, // Front
+            { 3, 2, 6, 7 }, // Back
+            { 0, 3, 7, 4 }, // Left
+            { 1, 2, 6, 5 } // Right
+        };
+
+        // Draw Fill
+        if (fill) {
+            for (const auto& face : faces) {
+                ImVec2 points[4];
+                bool valid = true;
+                for (int i = 0; i < 4; ++i) {
+                    points[i] = cube.corners[face[i]];
+                    if (points[i].x == -99999) {
+                        valid = false;
+                    }
+                }
+
+                if (valid) {
+                    dl->AddConvexPolyFilled(points, 4, fillColor);
+                }
+            }
+        }
 
         ImU32 color = style.getColor().toU32();
 
-        for (auto [a, b] : lines) {
+        for (auto [a, b] : edges) {
+            if (cube.corners[a].x == -99999 || cube.corners[b].x == -99999) {
+                continue;
+            }
+
             if (style.outline) {
                 dl->AddLine(cube.corners[a], cube.corners[b], ImColor(0, 0, 0, 255), style.thickness + 2.0f);
             }
             dl->AddLine(cube.corners[a], cube.corners[b], color, style.thickness);
-        }
-    }
-
-    inline void drawSkeleton(
-        ImDrawList* dl, const std::vector<std::pair<ImVec2, ImVec2>>& bones, const VisualsStyle& style) {
-
-        float offset = 0.0f;
-        float step   = (style.colorMode == ColorMode::Solid) ? 0.0f : (0.5f / (float) bones.size());
-
-        for (const auto& bone : bones) {
-            ImU32 color = style.getColor(offset).toU32();
-
-            if (style.outline) {
-                dl->AddLine(bone.first, bone.second, ImColor(0, 0, 0, 200), style.thickness + 2.0f);
-            }
-            dl->AddLine(bone.first, bone.second, color, style.thickness);
-
-            offset += step;
         }
     }
 
