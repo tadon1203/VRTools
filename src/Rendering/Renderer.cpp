@@ -7,6 +7,7 @@
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
 
+#include "Core/Events/RenderEvents.hpp"
 #include "Core/Logger.hpp"
 #include "Features/FeatureManager.hpp"
 #include "HUD/HUDManager.hpp"
@@ -186,7 +187,9 @@ HRESULT Renderer::hookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UIN
 
     MenuManager::instance().render();
 
-    FeatureManager::instance().renderAll();
+    RenderEvent e;
+    EventManager::instance().fire(e);
+
     NotificationManager::instance().render();
 
     ImGui::Render();

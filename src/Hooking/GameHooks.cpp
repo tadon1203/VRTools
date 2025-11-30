@@ -1,5 +1,7 @@
 #include "GameHooks.hpp"
 
+#include "Core/Events/GameEvents.hpp"
+#include "Core/Events/NetworkEvents.hpp"
 #include "Core/Logger.hpp"
 #include "Features/FeatureManager.hpp"
 #include "Hooking/HookManager.hpp"
@@ -12,23 +14,20 @@
 #include "UI/NotificationManager.hpp"
 #include "Utils/PatternScan.hpp"
 
-void (*GameHooks::m_originalUpdate)(void*) = nullptr;
-
-void (*GameHooks::m_originalOnEvent)(void*, void*) = nullptr;
-
+void (*GameHooks::m_originalUpdate)(void*)                                                                    = nullptr;
+void (*GameHooks::m_originalOnEvent)(void*, void*)                                                            = nullptr;
 bool (*GameHooks::m_originalRaiseEvent)(uint8_t, Il2CppObject*, void* raiseEventOptions, Photon::SendOptions) = nullptr;
-
-void (*GameHooks::m_originalSetLockState)(UnityEngine::CursorLockMode) = nullptr;
-void (*GameHooks::m_originalSetVisible)(bool)                          = nullptr;
+void (*GameHooks::m_originalSetLockState)(UnityEngine::CursorLockMode)                                        = nullptr;
+void (*GameHooks::m_originalSetVisible)(bool)                                                                 = nullptr;
 
 void GameHooks::initialize() {
     setupMainLoopHook();
     setupNetworkEventHook();
     setupRaiseEventHook();
     setupCursorHooks();
-
-    Logger::instance().info("Game hooks initialized successfully.");
+    Logger::instance().info("Game hooks initialized.");
 }
+
 void GameHooks::setupMainLoopHook() {
     const MethodInfo* updateMethod = Il2Cpp::resolveMethod("VRC.Udon.dll", "VRC.Udon", "UdonManager", "Update", 0);
 
@@ -64,26 +63,17 @@ void GameHooks::setupCursorHooks() {
         "Cursor_set_visible", setVisibleMethod->methodPointer, &hookSetVisible, &m_originalSetVisible);
 }
 void GameHooks::hookUpdate(void* instance) {
-    static bool firstRun = true;
-    if (firstRun) {
-        Logger::instance().info("GameHooks: First Update tick started.");
-    }
-
     try {
         InputManager::instance().update();
         PlayerManager::instance().update();
-        FeatureManager::instance().updateAll();
         NotificationManager::instance().update();
         CursorManager::instance().update();
+
+        FrameUpdateEvent e;
+        EventManager::instance().fire(e);
+
     } catch (const std::exception& e) {
         Logger::instance().error("GameHooks: Exception in Update loop: {}", e.what());
-    } catch (...) {
-        Logger::instance().error("GameHooks: Unknown exception in Update loop.");
-    }
-
-    if (firstRun) {
-        Logger::instance().info("GameHooks: First Update tick finished.");
-        firstRun = false;
     }
 
     if (m_originalUpdate) {
@@ -92,27 +82,35 @@ void GameHooks::hookUpdate(void* instance) {
 }
 
 void GameHooks::hookOnEvent(void* instance, void* eventDataPtr) {
-    auto eventData          = static_cast<Photon::EventData*>(eventDataPtr);
-    bool shouldCallOriginal = true;
+    auto eventData = static_cast<Photon::EventData*>(eventDataPtr);
 
     if (eventData) {
-        shouldCallOriginal = FeatureManager::instance().onEventAll(eventData);
+        PhotonEventEvent e(eventData);
+        EventManager::instance().fire(e);
+
+        if (e.isCancelled()) {
+            return;
+        }
     }
 
-    if (shouldCallOriginal && m_originalOnEvent) {
+    if (m_originalOnEvent) {
         m_originalOnEvent(instance, eventDataPtr);
     }
 }
 
 bool GameHooks::hookRaiseEvent(
     uint8_t eventCode, Il2CppObject* content, void* raiseEventOptions, Photon::SendOptions sendOptions) {
-    bool shouldCallOriginal =
-        FeatureManager::instance().onRaiseEventAll(eventCode, content, raiseEventOptions, sendOptions);
 
-    if (shouldCallOriginal && m_originalRaiseEvent) {
-        return m_originalRaiseEvent(eventCode, content, raiseEventOptions, sendOptions);
+    RaiseEventEvent e(eventCode, content, raiseEventOptions, sendOptions);
+    EventManager::instance().fire(e);
+
+    if (e.isCancelled()) {
+        return false;
     }
 
+    if (m_originalRaiseEvent) {
+        return m_originalRaiseEvent(eventCode, content, raiseEventOptions, sendOptions);
+    }
     return false;
 }
 

@@ -12,7 +12,7 @@
 #include "SDK/Unity/Camera.hpp"
 #include "VRCPlayerApi.hpp"
 
-// Data structure safe for the Rendering thread
+// this must be safe for the Rendering thread
 struct DrawPlayer {
     std::string name;
     std::string userID;

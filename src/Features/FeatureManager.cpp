@@ -12,46 +12,6 @@ void FeatureManager::initializeAll() {
         feature->initialize();
     }
 }
-
-void FeatureManager::updateAll() {
-    for (const auto& feature : m_features) {
-        if (feature->isEnabled()) {
-            feature->onUpdate();
-        }
-    }
-}
-
-void FeatureManager::renderAll() {
-    for (const auto& feature : m_features) {
-        if (feature->isEnabled()) {
-            feature->onRender();
-        }
-    }
-}
-
-bool FeatureManager::onEventAll(Photon::EventData* eventData) {
-    for (const auto& feature : m_features) {
-        if (feature->isEnabled()) {
-            if (!feature->onEvent(eventData)) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-bool FeatureManager::onRaiseEventAll(
-    uint8_t eventCode, Il2CppObject* content, void* raiseEventOptions, Photon::SendOptions sendOptions) {
-    for (const auto& feature : m_features) {
-        if (feature->isEnabled()) {
-            if (!feature->onRaiseEvent(eventCode, content, raiseEventOptions, sendOptions)) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
 void FeatureManager::onLoadConfig(const nlohmann::json& section) {
     for (const auto& feature : m_features) {
         if (section.contains(feature->getName())) {

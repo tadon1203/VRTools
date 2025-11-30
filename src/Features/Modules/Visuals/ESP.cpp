@@ -14,7 +14,10 @@ ESP::ESP()
     m_elements.push_back(std::make_unique<DistanceElement>());
 }
 
-void ESP::onRender() {
+void ESP::onEnable() {
+    registerEvent<RenderEvent>([this](RenderEvent& e) { this->onRender(e); });
+}
+void ESP::onRender(RenderEvent& e) {
     auto players = PlayerManager::instance().getDrawPlayers();
     if (players.empty()) {
         return;
@@ -77,8 +80,6 @@ void ESP::onRender() {
 void ESP::onMenuRender() {
     ImGui::Text("ESP Elements");
     ImGui::Separator();
-
-
     for (const auto& el : m_elements) {
         el->onMenuRender();
     }
@@ -100,22 +101,4 @@ void ESP::onSaveConfig(nlohmann::json& j) const {
         el->onSaveConfig(elems);
     }
     j["Elements"] = elems;
-}
-
-bool ESP::isBoneEspEnabled() const {
-    for (const auto& el : m_elements) {
-        if (el->getName() == "Skeleton") {
-            return el->isEnabled();
-        }
-    }
-    return false;
-}
-
-bool ESP::isBox3dEnabled() const {
-    for (const auto& el : m_elements) {
-        if (el->getName() == "Box 3D") {
-            return el->isEnabled();
-        }
-    }
-    return false;
 }

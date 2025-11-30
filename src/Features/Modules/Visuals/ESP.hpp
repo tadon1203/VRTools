@@ -1,8 +1,8 @@
 #pragma once
-
 #include <memory>
 #include <vector>
 
+#include "Core/Events/RenderEvents.hpp"
 #include "ESPComponents/IESPElement.hpp"
 #include "Features/IFeature.hpp"
 
@@ -10,14 +10,14 @@ class ESP : public IFeature {
 public:
     ESP();
 
-    void onRender() override;
+    void onEnable() override;
+
     void onMenuRender() override;
     void onLoadConfig(const nlohmann::json& j) override;
     void onSaveConfig(nlohmann::json& j) const override;
 
-    [[nodiscard]] bool isBoneEspEnabled() const;
-    [[nodiscard]] bool isBox3dEnabled() const;
-
 private:
+    void onRender(RenderEvent& e);
+
     std::vector<std::unique_ptr<IESPElement>> m_elements;
 };
