@@ -37,13 +37,13 @@ namespace VRC {
             return Il2Cpp::invoke<Core::APIUser*>(getterMethod, this);
         }
 
-        static VRC_Player* get(UnityEngine::GameObject* go) {
-            if (!go) {
+        static VRC_Player* get(VRCPlayerApi* player) {
+            if (!player) {
                 return nullptr;
             }
 
             Il2CppObject* type = getStaticType();
-            return reinterpret_cast<VRC_Player*>(go->call<Il2CppObject*>("GetComponent", type));
+            return reinterpret_cast<VRC_Player*>(player->gameObject->call<Il2CppObject*>("GetComponent", type));
         }
     };
 }

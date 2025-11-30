@@ -115,7 +115,7 @@ void PlayerManager::resolveRank(PlayerEntry& entry) {
         return;
     }
 
-    auto* vrcPlayer = VRC::VRC_Player::get(entry.api->gameObject);
+    auto* vrcPlayer = VRC::VRC_Player::get(entry.api);
     if (!vrcPlayer) {
         return;
     }
