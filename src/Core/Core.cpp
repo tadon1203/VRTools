@@ -64,8 +64,8 @@ void Core::initialize() {
         SettingsManager::instance().loadAll();
 
         for (const auto& feature : fm.getFeatures()) {
-            if (auto vkCode = feature->getKeybind()) {
-                InputManager::instance().registerKeybind(*vkCode, [feature = feature.get()] { feature->onKeybind(); });
+            if (int vkCode = feature->getKeybind(); vkCode != 0) {
+                InputManager::instance().registerKeybind(vkCode, [feature = feature.get()] { feature->onKeybind(); });
             }
         }
 

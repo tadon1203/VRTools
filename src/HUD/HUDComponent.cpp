@@ -1,10 +1,5 @@
 #include "HUDComponent.hpp"
 
-HUDComponent::HUDComponent(std::string name, ImVec2 defaultPos)
-    : m_name(std::move(name))
-    , m_pos(defaultPos)
-    , m_anchorOffset(defaultPos) {}
-
 void HUDComponent::updatePosition(ImVec2 screenSize) {
     if (m_isDragging) {
         return;
@@ -103,37 +98,4 @@ void HUDComponent::render(ImDrawList* drawList, bool isEditMode) {
     if (m_enabled) {
         onRenderContent(drawList);
     }
-}
-
-void HUDComponent::onLoadConfig(const nlohmann::json& j) {
-    if (j.contains("Anchor")) {
-        m_anchor = static_cast<HUDAnchor>(j["Anchor"]);
-    }
-
-    if (j.contains("OffsetX")) {
-        m_anchorOffset.x = j["OffsetX"];
-    } else if (j.contains("x")) {
-        m_anchorOffset.x = j["x"];
-    }
-
-    if (j.contains("OffsetY")) {
-        m_anchorOffset.y = j["OffsetY"];
-    } else if (j.contains("y")) {
-        m_anchorOffset.y = j["y"];
-    }
-
-    if (j.contains("Enabled")) {
-        m_enabled = j["Enabled"];
-    }
-
-    if (m_anchor == HUDAnchor::TopLeft) {
-        m_pos = m_anchorOffset;
-    }
-}
-
-void HUDComponent::onSaveConfig(nlohmann::json& j) const {
-    j["Anchor"]  = m_anchor;
-    j["OffsetX"] = m_anchorOffset.x;
-    j["OffsetY"] = m_anchorOffset.y;
-    j["Enabled"] = m_enabled;
 }

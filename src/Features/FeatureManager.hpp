@@ -30,12 +30,12 @@ public:
     [[nodiscard]] const std::vector<std::unique_ptr<IFeature>>& getFeatures() const { return m_features; }
 
     [[nodiscard]] std::string getSectionName() const override { return "Features"; }
-    [[nodiscard]] nlohmann::json onSaveConfig() const override;
-    void onLoadConfig(const nlohmann::json& section) override;
+    SettingsGroup& getSettings() override { return m_group; }
 
 private:
     FeatureManager()           = default;
     ~FeatureManager() override = default;
 
     std::vector<std::unique_ptr<IFeature>> m_features;
+    SettingsGroup m_group;
 };

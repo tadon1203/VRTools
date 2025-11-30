@@ -12,6 +12,10 @@ ESP::ESP()
     m_elements.push_back(std::make_unique<SkeletonElement>());
     m_elements.push_back(std::make_unique<NametagElement>());
     m_elements.push_back(std::make_unique<DistanceElement>());
+
+    for (auto& el : m_elements) {
+        m_settings.addChild(el->getName(), &el->getSettings());
+    }
 }
 
 void ESP::onEnable() {
@@ -83,22 +87,4 @@ void ESP::onMenuRender() {
     for (const auto& el : m_elements) {
         el->onMenuRender();
     }
-}
-
-void ESP::onLoadConfig(const nlohmann::json& j) {
-    IFeature::onLoadConfig(j);
-    if (j.contains("Elements")) {
-        for (const auto& el : m_elements) {
-            el->onLoadConfig(j["Elements"]);
-        }
-    }
-}
-
-void ESP::onSaveConfig(nlohmann::json& j) const {
-    IFeature::onSaveConfig(j);
-    nlohmann::json elems;
-    for (const auto& el : m_elements) {
-        el->onSaveConfig(elems);
-    }
-    j["Elements"] = elems;
 }

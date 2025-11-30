@@ -5,13 +5,21 @@
 #include <imgui.h>
 #include <nlohmann/json.hpp>
 
-enum class HUDAnchor { TopLeft, TopRight, BottomLeft, BottomRight };
+#include "Core/Settings/SettingsGroup.hpp"
+#include "HUDDef.hpp"
 
 class HUDComponent {
 public:
     virtual ~HUDComponent() = default;
 
-    explicit HUDComponent(std::string name, ImVec2 defaultPos);
+    explicit HUDComponent(std::string name, ImVec2 defaultPos)
+        : m_name(std::move(name))
+        , m_pos(defaultPos)
+        , m_anchorOffset(defaultPos) {
+        m_settings.add("Enabled", &m_enabled, true);
+        m_settings.add("Anchor", reinterpret_cast<int*>(&m_anchor), 0);
+        m_settings.add("Offset", &m_anchorOffset);
+    }
 
     virtual void initialize() {}
 
@@ -32,8 +40,7 @@ public:
     bool m_isHovered  = false;
     bool m_isDragging = false;
 
-    virtual void onLoadConfig(const nlohmann::json& j);
-    virtual void onSaveConfig(nlohmann::json& j) const;
+    SettingsGroup& getSettings() { return m_settings; }
 
 protected:
     std::string m_name;
@@ -41,4 +48,6 @@ protected:
     HUDAnchor m_anchor = HUDAnchor::TopLeft;
     ImVec2 m_anchorOffset;
     bool m_enabled = true;
+
+    SettingsGroup m_settings;
 };

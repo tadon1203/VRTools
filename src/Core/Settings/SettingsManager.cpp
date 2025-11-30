@@ -20,20 +20,20 @@ void SettingsManager::registerHandler(ISettingsHandler* handler) { m_handlers.pu
 void SettingsManager::saveAll() {
     nlohmann::json root = nlohmann::json::object();
 
-    for (const auto* handler : m_handlers) {
+    for (auto* handler : m_handlers) {
         try {
-            root[handler->getSectionName()] = handler->onSaveConfig();
+            nlohmann::json section;
+            handler->getSettings().save(section); // Automatic save
+            root[handler->getSectionName()] = section;
         } catch (const std::exception& e) {
             Logger::instance().error("Failed to gather settings for {}: {}", handler->getSectionName(), e.what());
         }
     }
-
     saveToFile(root);
 }
 
 void SettingsManager::loadAll() {
     nlohmann::json root = loadFromFile();
-
     if (root.empty()) {
         return;
     }
@@ -42,7 +42,7 @@ void SettingsManager::loadAll() {
         std::string section = handler->getSectionName();
         if (root.contains(section)) {
             try {
-                handler->onLoadConfig(root[section]);
+                handler->getSettings().load(root[section]); // Automatic load
             } catch (const std::exception& e) {
                 Logger::instance().error("Failed to load settings section {}: {}", section, e.what());
             }

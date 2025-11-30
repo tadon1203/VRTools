@@ -33,7 +33,6 @@ void FeaturesMenu::render(ImVec2 center, ImVec2 size) {
             if (ImGui::BeginTabItem(toString(category))) {
                 m_selectedCategory = category;
 
-                // Ensure selected feature is in this category
                 bool found = false;
                 if (m_selectedFeature) {
                     for (auto* f : features) {
@@ -82,9 +81,10 @@ void FeaturesMenu::renderFeatureSettings(IFeature* feature) {
         feature->setEnabled(enabled);
     }
 
-    if (auto k = feature->getKeybind()) {
+    // CHANGED: Check if keybind != 0
+    if (int k = feature->getKeybind(); k != 0) {
         ImGui::SameLine();
-        ImGui::TextDisabled("(Key: %d)", *k);
+        ImGui::TextDisabled("(Key: %d)", k);
     }
 
     ImGui::Separator();

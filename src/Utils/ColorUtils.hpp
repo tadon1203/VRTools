@@ -27,18 +27,18 @@ struct Color {
 
     [[nodiscard]] ImU32 toU32() const { return ImColor(r, g, b, a); }
 
-    [[nodiscard]] operator ImColor() const { return ImColor(r, g, b, a); }
+    [[nodiscard]] operator ImColor() const { return { r, g, b, a }; }
 
-    [[nodiscard]] operator ImVec4() const { return ImVec4(r, g, b, a); }
+    [[nodiscard]] operator ImVec4() const { return { r, g, b, a }; }
 
     static Color lerp(const Color& a, const Color& b, float t) {
-        return Color(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t);
+        return { a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t };
     }
 
     static Color fromHSV(float h, float s, float v, float a = 1.0f) {
         float r, g, b;
         ImGui::ColorConvertHSVtoRGB(h, s, v, r, g, b);
-        return Color(r, g, b, a);
+        return { r, g, b, a };
     }
 
     // Hue Cycle
@@ -53,14 +53,23 @@ struct Color {
 
 class Gradient {
 public:
+    struct Stop {
+        float time;
+        Color color;
+    };
+
     void addStop(float t, Color color) {
         m_stops.push_back({ t, color });
-        std::sort(m_stops.begin(), m_stops.end(), [](const auto& a, const auto& b) { return a.time < b.time; });
+        sort();
     }
+
+    void clear() { m_stops.clear(); }
+
+    [[nodiscard]] const std::vector<Stop>& getStops() const { return m_stops; }
 
     [[nodiscard]] Color get(float t) const {
         if (m_stops.empty()) {
-            return Color(1, 1, 1, 1);
+            return { 1, 1, 1, 1 };
         }
         if (m_stops.size() == 1) {
             return m_stops[0].color;
@@ -85,12 +94,11 @@ public:
     }
 
 private:
-    struct Stop {
-        float time;
-        Color color;
-    };
+    void sort() {
+        std::sort(m_stops.begin(), m_stops.end(), [](const auto& a, const auto& b) { return a.time < b.time; });
+    }
 
-    Color interpolate(const Stop& s1, const Stop& s2, float t) const {
+    [[nodiscard]] Color interpolate(const Stop& s1, const Stop& s2, float t) const {
         float t1 = s1.time;
         float t2 = s2.time;
         if (t2 < t1) {

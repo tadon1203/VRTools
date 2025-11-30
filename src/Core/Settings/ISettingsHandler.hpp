@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include <nlohmann/json.hpp>
+#include "SettingsGroup.hpp"
 
 class ISettingsHandler {
 public:
@@ -10,7 +10,5 @@ public:
 
     [[nodiscard]] virtual std::string getSectionName() const = 0;
 
-    [[nodiscard]] virtual nlohmann::json onSaveConfig() const = 0;
-
-    virtual void onLoadConfig(const nlohmann::json& section) = 0;
+    virtual SettingsGroup& getSettings() = 0;
 };

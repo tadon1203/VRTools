@@ -97,27 +97,3 @@ void HUDManager::updateInput() {
         }
     }
 }
-
-void HUDManager::onLoadConfig(const nlohmann::json& section) {
-    if (section.contains("Components")) {
-        auto& comps = section["Components"];
-        for (const auto& comp : m_components) {
-            if (comps.contains(comp->getName())) {
-                comp->onLoadConfig(comps[comp->getName()]);
-            }
-        }
-    }
-}
-
-nlohmann::json HUDManager::onSaveConfig() const {
-    nlohmann::json root  = nlohmann::json::object();
-    nlohmann::json comps = nlohmann::json::object();
-
-    for (const auto& comp : m_components) {
-        nlohmann::json c = nlohmann::json::object();
-        comp->onSaveConfig(c);
-        comps[comp->getName()] = c;
-    }
-    root["Components"] = comps;
-    return root;
-}

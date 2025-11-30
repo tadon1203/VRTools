@@ -15,17 +15,17 @@ public:
 
     template <typename T>
     void registerComponent() {
-        m_components.push_back(std::make_unique<T>());
+        auto comp = std::make_unique<T>();
+        m_group.addChild(comp->getName(), &comp->getSettings());
+        m_components.push_back(std::move(comp));
     }
 
-    // ISettingsHandler
     [[nodiscard]] std::string getSectionName() const override { return "HUD"; }
-    [[nodiscard]] nlohmann::json onSaveConfig() const override;
-    void onLoadConfig(const nlohmann::json& section) override;
+    SettingsGroup& getSettings() override { return m_group; }
 
 private:
-    HUDManager()  = default;
-    ~HUDManager() = default;
+    HUDManager()           = default;
+    ~HUDManager() override = default;
 
     void updateInput();
     void drawGrid(ImDrawList* dl);
@@ -34,4 +34,6 @@ private:
     float m_gridSize                 = 20.0f;
     HUDComponent* m_draggedComponent = nullptr;
     ImVec2 m_dragOffset{ 0, 0 };
+
+    SettingsGroup m_group;
 };

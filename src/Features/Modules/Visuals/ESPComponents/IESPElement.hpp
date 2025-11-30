@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include "../VisualsUtils.hpp"
+#include "Core/Settings/SettingsGroup.hpp"
 #include "ESPDef.hpp"
 #include "SDK/Game/PlayerManager.hpp"
 
@@ -19,10 +20,14 @@ public:
         : m_name(std::move(name))
         , m_type(type)
         , m_anchor(defaultAnchor) {
-
-        // Default Gradient
         m_style.gradient.addStop(0.0f, Color(0.0f, 0.5f, 1.0f));
         m_style.gradient.addStop(1.0f, Color(1.0f, 0.5f, 0.0f));
+
+        m_settings.add("Enabled", &m_enabled, true);
+
+        m_settings.add("Anchor", &m_anchor, defaultAnchor);
+
+        m_settings.add("Style", &m_style);
     }
 
     virtual ImVec2 getSize(const DrawPlayer& player, const ESPContext& ctx)                          = 0;
@@ -71,49 +76,7 @@ public:
         }
     }
 
-    virtual void onLoadConfig(const nlohmann::json& j) {
-        if (j.contains(m_name)) {
-            const auto& s = j[m_name];
-            if (s.contains("Enabled")) {
-                m_enabled = s["Enabled"];
-            }
-            if (s.contains("Anchor")) {
-                m_anchor = static_cast<ESPAnchor>(s["Anchor"]);
-            }
-
-            if (s.contains("Mode")) {
-                m_style.colorMode = static_cast<VisualsUtils::ColorMode>(s["Mode"]);
-            }
-            if (s.contains("Color")) {
-                auto c               = s["Color"];
-                m_style.primaryColor = Color(c[0], c[1], c[2], c[3]);
-            }
-            if (s.contains("Speed")) {
-                m_style.animationSpeed = s["Speed"];
-            }
-            if (s.contains("Thickness")) {
-                m_style.thickness = s["Thickness"];
-            }
-            if (s.contains("Outline")) {
-                m_style.outline = s["Outline"];
-            }
-            if (s.contains("FontSize")) {
-                m_style.fontSize = s["FontSize"];
-            }
-            if (s.contains("TextOutline")) {
-                m_style.textOutline = s["TextOutline"];
-            }
-        }
-    }
-
-    virtual void onSaveConfig(nlohmann::json& j) const {
-        j[m_name] = { { "Enabled", m_enabled }, { "Anchor", m_anchor }, { "Mode", m_style.colorMode },
-            { "Color",
-                { m_style.primaryColor.r, m_style.primaryColor.g, m_style.primaryColor.b, m_style.primaryColor.a } },
-            { "Speed", m_style.animationSpeed }, { "Thickness", m_style.thickness }, { "Outline", m_style.outline },
-            { "FontSize", m_style.fontSize }, { "TextOutline", m_style.textOutline } };
-    }
-
+    SettingsGroup& getSettings() { return m_settings; }
     [[nodiscard]] bool isEnabled() const { return m_enabled; }
     [[nodiscard]] ESPAnchor getAnchor() const { return m_anchor; }
     [[nodiscard]] const std::string& getName() const { return m_name; }
@@ -132,6 +95,7 @@ protected:
     ElementType m_type;
     ESPAnchor m_anchor;
     bool m_enabled = true;
-
     VisualsUtils::VisualsStyle m_style;
+
+    SettingsGroup m_settings;
 };

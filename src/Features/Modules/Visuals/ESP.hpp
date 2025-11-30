@@ -1,6 +1,4 @@
 #pragma once
-#include <memory>
-#include <vector>
 
 #include "Core/Events/RenderEvents.hpp"
 #include "ESPComponents/IESPElement.hpp"
@@ -9,15 +7,10 @@
 class ESP : public IFeature {
 public:
     ESP();
-
     void onEnable() override;
-
     void onMenuRender() override;
-    void onLoadConfig(const nlohmann::json& j) override;
-    void onSaveConfig(nlohmann::json& j) const override;
 
 private:
     void onRender(RenderEvent& e);
-
     std::vector<std::unique_ptr<IESPElement>> m_elements;
 };
