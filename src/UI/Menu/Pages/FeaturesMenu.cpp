@@ -54,8 +54,6 @@ void FeaturesMenu::render(ImVec2 center, ImVec2 size) {
         ImGui::EndTabBar();
     }
 
-    ImGui::BeginChild("SplitView", ImVec2(0, 0), true);
-
     ImGui::BeginChild("LeftPane", ImVec2(180, 0), true);
     auto& currentFeatures = m_featuresByCategory[m_selectedCategory];
     for (auto* feature : currentFeatures) {
@@ -71,8 +69,6 @@ void FeaturesMenu::render(ImVec2 center, ImVec2 size) {
     if (m_selectedFeature) {
         renderFeatureSettings(m_selectedFeature);
     }
-    ImGui::EndChild();
-
     ImGui::EndChild();
 }
 
