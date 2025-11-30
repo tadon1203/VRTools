@@ -28,10 +28,10 @@ struct Color {
     [[nodiscard]] ImU32 toU32() const { return ImColor(r, g, b, a); }
 
     [[nodiscard]] operator ImColor() const { return { r, g, b, a }; }
-
     [[nodiscard]] operator ImVec4() const { return { r, g, b, a }; }
 
     static Color lerp(const Color& a, const Color& b, float t) {
+        t = std::clamp(t, 0.0f, 1.0f);
         return { a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t };
     }
 
@@ -41,13 +41,17 @@ struct Color {
         return { r, g, b, a };
     }
 
-    // Hue Cycle
     static Color rainbow(float time, float speed, float saturation = 1.0f, float value = 1.0f, float alpha = 1.0f) {
         float hue = std::fmod(time * speed, 1.0f);
         if (hue < 0.0f) {
             hue += 1.0f;
         }
         return fromHSV(hue, saturation, value, alpha);
+    }
+
+    static Color wave(const Color& c1, const Color& c2, float time, float speed) {
+        float t = (std::sin(time * speed) + 1.0f) * 0.5f; // Map [-1, 1] to [0, 1]
+        return lerp(c1, c2, t);
     }
 };
 

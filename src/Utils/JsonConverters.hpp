@@ -7,6 +7,7 @@
 #include "Features/Modules/Visuals/VisualsUtils.hpp"
 #include "HUD/HUDDef.hpp"
 
+// ImVec2
 namespace nlohmann {
     template <>
     struct adl_serializer<ImVec2> {
@@ -22,6 +23,7 @@ namespace nlohmann {
     };
 }
 
+// Color
 namespace nlohmann {
     template <>
     struct adl_serializer<Color> {
@@ -37,6 +39,7 @@ namespace nlohmann {
     };
 }
 
+// Gradient
 namespace nlohmann {
     template <>
     struct adl_serializer<Gradient> {
@@ -46,7 +49,6 @@ namespace nlohmann {
                 j.push_back({ { "t", stop.time }, { "c", stop.color } });
             }
         }
-
         static void from_json(const json& j, Gradient& g) {
             g.clear();
             if (j.is_array()) {
@@ -66,7 +68,9 @@ namespace nlohmann {
     };
 }
 
+// Enums
 namespace VisualsUtils {
+    // Changed: Removed ColorMode::Wave mapping
     NLOHMANN_JSON_SERIALIZE_ENUM(ColorMode, { { ColorMode::Solid, "Solid" }, { ColorMode::Rainbow, "Rainbow" },
                                                 { ColorMode::Gradient, "Gradient" }, { ColorMode::Rank, "Rank" } })
 }
@@ -75,28 +79,37 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
     HUDAnchor, { { HUDAnchor::TopLeft, "TopLeft" }, { HUDAnchor::TopRight, "TopRight" },
                    { HUDAnchor::BottomLeft, "BottomLeft" }, { HUDAnchor::BottomRight, "BottomRight" } })
 
+// ESPStyle
 namespace nlohmann {
     template <>
-    struct adl_serializer<VisualsUtils::VisualsStyle> {
-        static void to_json(json& j, const VisualsUtils::VisualsStyle& s) {
-            j = json{ { "Mode", s.colorMode }, { "Color", s.primaryColor }, { "Gradient", s.gradient },
-                { "Thickness", s.thickness }, { "Outline", s.outline }, { "TextOutline", s.textOutline },
-                { "FontSize", s.fontSize }, { "Speed", s.animationSpeed } };
+    struct adl_serializer<VisualsUtils::ESPStyle> {
+        static void to_json(json& j, const VisualsUtils::ESPStyle& s) {
+            j = json{ { "Enabled", s.enabled }, { "Mode", s.colorMode }, { "Primary", s.primaryColor },
+                { "Secondary", s.secondaryColor }, { "Gradient", s.gradient }, { "Speed", s.animationSpeed },
+                { "Thickness", s.thickness }, { "Rounding", s.rounding }, { "Outline", s.outline },
+                { "Filled", s.filled }, { "FillAlpha", s.fillAlpha }, { "TextOutline", s.textOutline },
+                { "FontSize", s.fontSize } };
         }
 
-        static void from_json(const json& j, VisualsUtils::VisualsStyle& s) {
-            s.colorMode    = j.value("Mode", s.colorMode);
-            s.primaryColor = j.value("Color", s.primaryColor);
+        static void from_json(const json& j, VisualsUtils::ESPStyle& s) {
+            s.enabled        = j.value("Enabled", s.enabled);
+            s.colorMode      = j.value("Mode", s.colorMode);
+            s.primaryColor   = j.value("Primary", s.primaryColor);
+            s.secondaryColor = j.value("Secondary", s.secondaryColor);
 
             if (j.contains("Gradient")) {
                 j.at("Gradient").get_to(s.gradient);
             }
 
-            s.thickness      = j.value("Thickness", s.thickness);
-            s.outline        = j.value("Outline", s.outline);
-            s.textOutline    = j.value("TextOutline", s.textOutline);
-            s.fontSize       = j.value("FontSize", s.fontSize);
             s.animationSpeed = j.value("Speed", s.animationSpeed);
+            s.thickness      = j.value("Thickness", s.thickness);
+            s.rounding       = j.value("Rounding", s.rounding);
+            s.outline        = j.value("Outline", s.outline);
+            s.filled         = j.value("Filled", s.filled);
+            s.fillAlpha      = j.value("FillAlpha", s.fillAlpha);
+
+            s.textOutline = j.value("TextOutline", s.textOutline);
+            s.fontSize    = j.value("FontSize", s.fontSize);
         }
     };
 }

@@ -22,7 +22,7 @@ void SettingsManager::saveAll() {
 
     for (auto* handler : m_handlers) {
         try {
-            nlohmann::json section;
+            nlohmann::json section = nlohmann::json::object();
             handler->getSettings().save(section); // Automatic save
             root[handler->getSectionName()] = section;
         } catch (const std::exception& e) {

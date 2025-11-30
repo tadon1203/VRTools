@@ -13,7 +13,9 @@ public:
 
     template <typename T>
     void registerFeature() {
-        m_features.push_back(std::make_unique<T>());
+        auto feature = std::make_unique<T>();
+        m_group.addChild(feature->getName(), &feature->getSettings());
+        m_features.push_back(std::move(feature));
     }
 
     template <typename T>

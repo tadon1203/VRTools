@@ -11,15 +11,11 @@ public:
     void onMenuRender() override;
 
 private:
-    bool m_drawBox      = true;
-    bool m_drawBox3D    = false;
-    bool m_fillBox      = false;
-    bool m_drawName     = true;
-    bool m_drawDistance = true;
+    void renderStyleEditor(const char* label, VisualsUtils::ESPStyle& style, bool isText = false);
 
-    bool m_useRankColor = true;
-    Color m_customColor = Color(1.0f, 1.0f, 1.0f, 1.0f);
-    Color m_fillColor   = Color(1.0f, 1.0f, 1.0f, 0.3f);
-
-    VisualsUtils::VisualsStyle m_style;
+    VisualsUtils::ESPStyle m_box2DStyle;
+    VisualsUtils::ESPStyle m_box3DStyle;
+    VisualsUtils::ESPStyle m_skeletonStyle;
+    VisualsUtils::ESPStyle m_nameStyle;
+    VisualsUtils::ESPStyle m_distanceStyle;
 };
