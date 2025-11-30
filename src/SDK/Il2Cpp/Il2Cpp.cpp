@@ -6,6 +6,8 @@
 #include <string_view>
 #include <tuple>
 
+#include "Core/Logger.hpp"
+
 using ClassCacheKey = std::tuple<std::string_view, std::string_view, std::string_view>;
 static std::map<ClassCacheKey, Il2CppClass*> g_classCache;
 
@@ -60,6 +62,40 @@ Il2CppClass* Il2Cpp::findClass(const char* assemblyName, const char* namespaze, 
     return foundClass;
 }
 
+Il2CppClass* Il2Cpp::findClassByField(const char* assemblyName, const char* fieldName) {
+    auto domain = Exports::il2cpp_domain_get();
+    size_t assemblyCount;
+    const Il2CppAssembly** assemblies = Exports::il2cpp_domain_get_assemblies(domain, &assemblyCount);
+
+    for (size_t i = 0; i < assemblyCount; i++) {
+        const Il2CppAssembly* assembly = assemblies[i];
+        const Il2CppImage* image       = Exports::il2cpp_assembly_get_image(assembly);
+
+        // Simple check for assembly name containment
+        std::string_view imgName(image->name);
+        if (imgName.find(assemblyName) == std::string_view::npos) {
+            continue;
+        }
+
+        size_t classCount = Exports::il2cpp_image_get_class_count(image);
+        for (size_t c = 0; c < classCount; c++) {
+            Il2CppClass* klass = Exports::il2cpp_image_get_class(image, c);
+            if (!klass) {
+                continue;
+            }
+
+            void* iter = nullptr;
+            while (FieldInfo* field = Exports::il2cpp_class_get_fields(klass, &iter)) {
+                const char* fName = Exports::il2cpp_field_get_name(field);
+                if (fName && std::string_view(fName) == fieldName) {
+                    return klass;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
 const MethodInfo* Il2Cpp::resolveMethod(Il2CppClass* klass, const char* methodName, int argsCount) {
     if (!klass) {
         return nullptr;
@@ -86,4 +122,32 @@ const MethodInfo* Il2Cpp::resolveMethod(
     return resolveMethod(findClass(asmName, ns, cls), method, args);
 }
 
+const MethodInfo* Il2Cpp::resolveMethodByReturnType(Il2CppClass* klass, Il2CppClass* returnType, int argsCount) {
+    if (!klass || !returnType) {
+        return nullptr;
+    }
+
+    const Il2CppType* targetType = Exports::il2cpp_class_get_type(returnType);
+    if (!targetType) {
+        return nullptr;
+    }
+
+    void* iter = nullptr;
+    while (const MethodInfo* method = Exports::il2cpp_class_get_methods(klass, &iter)) {
+        if (Exports::il2cpp_method_get_param_count(method) != static_cast<uint32_t>(argsCount)) {
+            continue;
+        }
+
+        const Il2CppType* retType = Exports::il2cpp_method_get_return_type(method);
+        if (!retType) {
+            continue;
+        }
+
+        Il2CppClass* retClass = Exports::il2cpp_class_from_type(retType);
+        if (retClass == returnType) {
+            return method;
+        }
+    }
+    return nullptr;
+}
 Il2CppString* Il2Cpp::newString(const char* str) { return Exports::il2cpp_string_new(str); }

@@ -16,9 +16,10 @@ public:
     ImVec2 getSize(const DrawPlayer& p, const ESPContext& ctx) override { return { 0, 0 }; }
 
     void render(ImDrawList* dl, const DrawPlayer& p, const ESPContext& ctx, ImVec2 pos) override {
-        m_style.time               = ctx.curTime;
+        auto style                 = getStyle(p);
+        style.time                 = ctx.curTime;
         VisualsUtils::ScreenRect r = { p.rectMin, p.rectMax };
-        VisualsUtils::drawBox2D(dl, r, m_style);
+        VisualsUtils::drawBox2D(dl, r, style);
     }
 };
 
@@ -35,7 +36,8 @@ public:
     ImVec2 getSize(const DrawPlayer& p, const ESPContext& ctx) override { return { 0, 0 }; }
 
     void render(ImDrawList* dl, const DrawPlayer& p, const ESPContext& ctx, ImVec2 pos) override {
-        m_style.time = ctx.curTime;
+        auto style = getStyle(p);
+        style.time = ctx.curTime;
         VisualsUtils::ScreenCube cube;
         bool valid = true;
         for (int i = 0; i < 8; ++i) {
@@ -46,7 +48,7 @@ public:
             cube.corners[i] = p.corners3d[i];
         }
         if (valid) {
-            VisualsUtils::drawBox3D(dl, cube, m_style);
+            VisualsUtils::drawBox3D(dl, cube, style);
         }
     }
 };
@@ -64,8 +66,9 @@ public:
 
     void render(ImDrawList* dl, const DrawPlayer& p, const ESPContext& ctx, ImVec2 pos) override {
         if (!p.bones.empty()) {
-            m_style.time = ctx.curTime;
-            VisualsUtils::drawSkeleton(dl, p.bones, m_style);
+            auto style = getStyle(p);
+            style.time = ctx.curTime;
+            VisualsUtils::drawSkeleton(dl, p.bones, style);
         }
     }
 };
@@ -84,8 +87,9 @@ public:
     }
 
     void render(ImDrawList* dl, const DrawPlayer& p, const ESPContext& ctx, ImVec2 pos) override {
-        m_style.time = ctx.curTime;
-        VisualsUtils::drawText(dl, pos, p.name, m_style, false);
+        auto style = getStyle(p);
+        style.time = ctx.curTime;
+        VisualsUtils::drawText(dl, pos, p.name, style, false);
     }
 };
 
@@ -105,7 +109,8 @@ public:
 
     void render(ImDrawList* dl, const DrawPlayer& p, const ESPContext& ctx, ImVec2 pos) override {
         std::string s = fmt::format("[{:.0f}m]", p.distance);
-        m_style.time  = ctx.curTime;
-        VisualsUtils::drawText(dl, pos, s, m_style, false);
+        auto style    = getStyle(p);
+        style.time    = ctx.curTime;
+        VisualsUtils::drawText(dl, pos, s, style, false);
     }
 };

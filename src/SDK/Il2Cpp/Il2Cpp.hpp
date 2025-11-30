@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 
 #include "Functions.hpp"
@@ -11,8 +12,11 @@ namespace Il2Cpp {
 
     Il2CppClass* findClass(const char* assemblyName, const char* namespaze, const char* className);
 
+    Il2CppClass* findClassByField(const char* assemblyName, const char* fieldName);
+
     const MethodInfo* resolveMethod(Il2CppClass* klass, const char* methodName, int argsCount);
     const MethodInfo* resolveMethod(const char* asmName, const char* ns, const char* cls, const char* method, int args);
+    const MethodInfo* resolveMethodByReturnType(Il2CppClass* klass, Il2CppClass* returnType, int argsCount = 0);
 
     Il2CppString* newString(const char* str);
 
@@ -20,7 +24,7 @@ namespace Il2Cpp {
         template <typename R, typename... Args>
         R invokeImpl(const MethodInfo* method, void* instance, bool isStatic, Args... args) {
             if (!method) {
-                throw std::runtime_error("Method is null");
+                return R{};
             }
 
             if (method->methodPointer) {

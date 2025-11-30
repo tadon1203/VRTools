@@ -10,7 +10,7 @@
 
 namespace VisualsUtils {
 
-    enum class ColorMode { Solid, Rainbow, Gradient };
+    enum class ColorMode { Solid, Rainbow, Gradient, Rank };
 
     struct VisualsStyle {
         ColorMode colorMode = ColorMode::Solid;
@@ -20,7 +20,6 @@ namespace VisualsUtils {
         float thickness = 1.0f;
         bool outline    = true;
 
-        // Text settings
         bool textOutline = true;
         float fontSize   = 13.0f;
 

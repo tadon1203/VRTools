@@ -9,6 +9,7 @@ struct Il2CppClass {};
 struct Il2CppDomain {};
 struct Il2CppThread {};
 struct Il2CppType {};
+struct FieldInfo {};
 
 struct MethodInfo {
     void* methodPointer;

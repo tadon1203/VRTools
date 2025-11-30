@@ -47,13 +47,13 @@ public:
             ImGui::TextDisabled("Style Settings");
 
             int modeInt = static_cast<int>(m_style.colorMode);
-            if (ImGui::Combo("Mode", &modeInt, "Solid\0Rainbow\0Gradient")) {
+            if (ImGui::Combo("Mode", &modeInt, "Solid\0Rainbow\0Gradient\0Rank")) {
                 m_style.colorMode = static_cast<VisualsUtils::ColorMode>(modeInt);
             }
 
             if (m_style.colorMode == VisualsUtils::ColorMode::Solid) {
                 ImGui::ColorEdit4("Color", &m_style.primaryColor.r);
-            } else {
+            } else if (m_style.colorMode != VisualsUtils::ColorMode::Rank) {
                 ImGui::SliderFloat("Anim Speed", &m_style.animationSpeed, 0.1f, 5.0f);
             }
 
@@ -117,6 +117,15 @@ public:
     [[nodiscard]] bool isEnabled() const { return m_enabled; }
     [[nodiscard]] ESPAnchor getAnchor() const { return m_anchor; }
     [[nodiscard]] const std::string& getName() const { return m_name; }
+
+    [[nodiscard]] VisualsUtils::VisualsStyle getStyle(const DrawPlayer& p) const {
+        auto style = m_style;
+        if (style.colorMode == VisualsUtils::ColorMode::Rank) {
+            style.colorMode    = VisualsUtils::ColorMode::Solid;
+            style.primaryColor = VRC::getRankColor(p.rank);
+        }
+        return style;
+    }
 
 protected:
     std::string m_name;
