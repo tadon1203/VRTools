@@ -1,73 +1,14 @@
-#pragma once
+#include "ESPUtils.hpp"
 
-#include <array>
-#include <string>
-#include <vector>
+#include "Utils/RenderUtils.hpp"
 
-#include <imgui.h>
-
-#include "Utils/ColorUtils.hpp"
-
-namespace VisualsUtils {
-
-    // 1. Removed ColorMode::Wave
-    enum class ColorMode { Solid, Rainbow, Gradient, Rank };
-    enum class TextAnchor { Top, Bottom, Left, Right, Center };
-
-    struct ESPStyle {
-        bool enabled = true;
-
-        ColorMode colorMode  = ColorMode::Solid;
-        Color primaryColor   = Color(1.0f, 1.0f, 1.0f, 1.0f);
-        Color secondaryColor = Color(0.0f, 0.6f, 1.0f, 1.0f);
-        Gradient gradient;
-
-        float animationSpeed = 2.0f;
-
-        float thickness = 1.0f;
-        float rounding  = 0.0f;
-        bool outline    = true;
-
-        bool filled     = false;
-        float fillAlpha = 0.3f;
-
-        bool textOutline = true;
-        float fontSize   = 13.0f;
-
-        [[nodiscard]] Color getColor(float offset = 0.0f) const {
-            float t = (static_cast<float>(ImGui::GetTime()) * animationSpeed) + offset;
-
-            switch (colorMode) {
-            case ColorMode::Rainbow:
-                return Color::rainbow(t, 1.0f, 1.0f, 1.0f, primaryColor.a);
-            case ColorMode::Gradient:
-                return gradient.get(t);
-            // 2. Removed ColorMode::Wave case
-            case ColorMode::Rank:
-                return primaryColor;
-            default:
-                return primaryColor;
-            }
-        }
-    };
-
-    struct ESPObject {
-        ImVec2 rectMin;
-        ImVec2 rectMax;
-
-        std::array<ImVec2, 8> corners3d;
-        bool is3dValid = false;
-
-        std::vector<std::pair<ImVec2, ImVec2>> bones;
-
-        float distance = 0.0f;
-    };
+namespace ESPUtils {
 
     struct CornerColors {
         ImU32 tl, tr, bl, br;
     };
 
-    inline CornerColors calculateBoxColors(const ESPStyle& style) {
+    static CornerColors calculateBoxColors(const ESPStyle& style) {
         float time = static_cast<float>(ImGui::GetTime()) * style.animationSpeed;
         CornerColors c{};
 
@@ -89,7 +30,7 @@ namespace VisualsUtils {
         return c;
     }
 
-    inline void renderBox2D(ImDrawList* dl, const ESPObject& obj, const ESPStyle& style) {
+    void renderBox2D(ImDrawList* dl, const ESPObject& obj, const ESPStyle& style) {
         if (!style.enabled) {
             return;
         }
@@ -122,24 +63,16 @@ namespace VisualsUtils {
             ImVec2(max.x - t, min.y + t), ImVec2(max.x, max.y - t), cols.tr, cols.tr, cols.br, cols.br);
     }
 
-    inline void renderBox3D(ImDrawList* dl, const ESPObject& obj, const ESPStyle& style) {
+    void renderBox3D(ImDrawList* dl, const ESPObject& obj, const ESPStyle& style) {
         if (!style.enabled || !obj.is3dValid) {
             return;
         }
 
-        // 3D Edge Indices
-        static constexpr std::pair<int, int> edges[] = {
-            { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, // Bottom
-            { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 }, // Top
-            { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 } // Sides
-        };
+        static constexpr std::pair<int, int> edges[] = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, { 4, 5 }, { 5, 6 },
+            { 6, 7 }, { 7, 4 }, { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 } };
 
-        // 3D Face Indices
-        static constexpr int faces[6][4] = {
-            { 0, 1, 2, 3 }, { 4, 5, 6, 7 }, // Bot, Top
-            { 0, 1, 5, 4 }, { 3, 2, 6, 7 }, // Front, Back
-            { 0, 3, 7, 4 }, { 1, 2, 6, 5 } // Left, Right
-        };
+        static constexpr int faces[6][4] = { { 0, 1, 2, 3 }, { 4, 5, 6, 7 }, { 0, 1, 5, 4 }, { 3, 2, 6, 7 },
+            { 0, 3, 7, 4 }, { 1, 2, 6, 5 } };
 
         Color mainCol = style.getColor();
 
@@ -170,7 +103,6 @@ namespace VisualsUtils {
         for (auto [a, b] : edges) {
             ImVec2 p1 = obj.corners3d[a];
             ImVec2 p2 = obj.corners3d[b];
-
             if (p1.x < -10000 || p2.x < -10000) {
                 continue;
             }
@@ -182,7 +114,7 @@ namespace VisualsUtils {
         }
     }
 
-    inline void renderSkeleton(ImDrawList* dl, const ESPObject& obj, const ESPStyle& style) {
+    void renderSkeleton(ImDrawList* dl, const ESPObject& obj, const ESPStyle& style) {
         if (!style.enabled || obj.bones.empty()) {
             return;
         }
@@ -199,7 +131,7 @@ namespace VisualsUtils {
         }
     }
 
-    inline void renderText(
+    void renderText(
         ImDrawList* dl, const ESPObject& obj, const std::string& text, const ESPStyle& style, TextAnchor anchor) {
         if (!style.enabled || text.empty()) {
             return;
@@ -226,8 +158,11 @@ namespace VisualsUtils {
             pos = { centerTop.x - txtSize.x * 0.5f,
                 centerTop.y + (obj.rectMax.y - obj.rectMin.y) * 0.5f - txtSize.y * 0.5f };
             break;
-        default:
-            pos = centerTop;
+        case TextAnchor::Left:
+            pos = { obj.rectMin.x - txtSize.x - padding, obj.rectMin.y };
+            break;
+        case TextAnchor::Right:
+            pos = { obj.rectMax.x + padding, obj.rectMin.y };
             break;
         }
 
