@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 
 #include "ColorUtils.hpp"
-#include "Features/Modules/Visuals/VisualsUtils.hpp"
+#include "Features/Modules/Visuals/ESPDef.hpp"
 #include "HUD/HUDDef.hpp"
 
 // ImVec2
@@ -68,12 +68,10 @@ namespace nlohmann {
     };
 }
 
-// Enums
-namespace VisualsUtils {
-    // Changed: Removed ColorMode::Wave mapping
-    NLOHMANN_JSON_SERIALIZE_ENUM(ColorMode, { { ColorMode::Solid, "Solid" }, { ColorMode::Rainbow, "Rainbow" },
-                                                { ColorMode::Gradient, "Gradient" }, { ColorMode::Rank, "Rank" } })
-}
+
+NLOHMANN_JSON_SERIALIZE_ENUM(ColorMode, { { ColorMode::Solid, "Solid" }, { ColorMode::Rainbow, "Rainbow" },
+                                            { ColorMode::Gradient, "Gradient" }, { ColorMode::Rank, "Rank" } })
+
 
 NLOHMANN_JSON_SERIALIZE_ENUM(
     HUDAnchor, { { HUDAnchor::TopLeft, "TopLeft" }, { HUDAnchor::TopRight, "TopRight" },
@@ -82,8 +80,8 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
 // ESPStyle
 namespace nlohmann {
     template <>
-    struct adl_serializer<VisualsUtils::ESPStyle> {
-        static void to_json(json& j, const VisualsUtils::ESPStyle& s) {
+    struct adl_serializer<ESPStyle> {
+        static void to_json(json& j, const ESPStyle& s) {
             j = json{ { "Enabled", s.enabled }, { "Mode", s.colorMode }, { "Primary", s.primaryColor },
                 { "Secondary", s.secondaryColor }, { "Gradient", s.gradient }, { "Speed", s.animationSpeed },
                 { "Thickness", s.thickness }, { "Rounding", s.rounding }, { "Outline", s.outline },
@@ -91,7 +89,7 @@ namespace nlohmann {
                 { "FontSize", s.fontSize } };
         }
 
-        static void from_json(const json& j, VisualsUtils::ESPStyle& s) {
+        static void from_json(const json& j, ESPStyle& s) {
             s.enabled        = j.value("Enabled", s.enabled);
             s.colorMode      = j.value("Mode", s.colorMode);
             s.primaryColor   = j.value("Primary", s.primaryColor);

@@ -3,10 +3,9 @@
 #include <fmt/format.h>
 #include <imgui.h>
 
+#include "ESPUtils.hpp" // Use the new ESP specific utils
 #include "SDK/Game/PlayerManager.hpp"
 #include "SDK/Game/PlayerRank.hpp"
-
-using namespace VisualsUtils;
 
 PlayerESP::PlayerESP()
     : IFeature(FeatureCategory::Visuals, "Player ESP") {
@@ -66,17 +65,17 @@ void PlayerESP::onRender() {
             return style;
         };
 
-        renderBox2D(dl, obj, applyRank(m_box2DStyle));
-        renderBox3D(dl, obj, applyRank(m_box3DStyle));
-        renderSkeleton(dl, obj, applyRank(m_skeletonStyle));
+        ESPUtils::renderBox2D(dl, obj, applyRank(m_box2DStyle));
+        ESPUtils::renderBox3D(dl, obj, applyRank(m_box3DStyle));
+        ESPUtils::renderSkeleton(dl, obj, applyRank(m_skeletonStyle));
 
         if (m_nameStyle.enabled) {
-            renderText(dl, obj, p.name, applyRank(m_nameStyle), TextAnchor::Top);
+            ESPUtils::renderText(dl, obj, p.name, applyRank(m_nameStyle), TextAnchor::Top);
         }
 
         if (m_distanceStyle.enabled) {
             std::string distStr = fmt::format("[{:.0f}m]", p.distance);
-            renderText(dl, obj, distStr, applyRank(m_distanceStyle), TextAnchor::Bottom);
+            ESPUtils::renderText(dl, obj, distStr, applyRank(m_distanceStyle), TextAnchor::Bottom);
         }
     }
 }

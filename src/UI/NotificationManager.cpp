@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Utils/ImGuiUtils.hpp"
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -86,8 +87,8 @@ void NotificationManager::render() {
         auto& notif = *it;
 
         float wrapWidth = NOTIFY_WIDTH - (NOTIFY_PADDING * 2) - ACCENT_THICKNESS;
-        ImVec2 titleSize =
-            ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, wrapWidth, notif.title.c_str());
+
+        ImVec2 titleSize = ImGuiUtils::getTextSize(notif.title);
         ImVec2 msgSize =
             ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, wrapWidth, notif.message.c_str());
 
@@ -136,7 +137,6 @@ void NotificationManager::render() {
         ImVec2 posMin(xStart, yStart);
         ImVec2 posMax(xEnd, yEnd);
 
-
         ImU32 accentColor = 0;
         ImU32 titleColor  = ImColor(1.0f, 1.0f, 1.0f, alpha);
         ImU32 msgColor    = ImColor(0.8f, 0.8f, 0.8f, alpha);
@@ -158,7 +158,6 @@ void NotificationManager::render() {
         }
 
         drawList->AddRectFilled(posMin, posMax, bgColor, NOTIFY_ROUNDING);
-
         drawList->AddRectFilled(posMin, ImVec2(posMin.x + ACCENT_THICKNESS, posMax.y), accentColor, NOTIFY_ROUNDING,
             ImDrawFlags_RoundCornersLeft);
 

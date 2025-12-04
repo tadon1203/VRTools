@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <vector>
 
-#include "../HUDUtils.hpp"
+#include "Utils/ImGuiUtils.hpp"
+
+#include "Utils/RenderUtils.hpp"
 
 LogComponent::LogComponent()
     : HUDComponent("LogOverlay", ImVec2(20, 300)) {
@@ -53,7 +55,7 @@ void LogComponent::onRenderContent(ImDrawList* dl) {
     std::vector<float> widths;
     widths.reserve(m_logs.size());
     for (const auto& log : m_logs) {
-        float w = HUDUtils::getTextSize(log.text).x;
+        float w = ImGuiUtils::getTextSize(log.text).x;
         widths.push_back(w);
         if (w > maxWidth) {
             maxWidth = w;
@@ -71,7 +73,7 @@ void LogComponent::onRenderContent(ImDrawList* dl) {
 
     auto drawLog = [&](const LogEntry& log, float w) {
         float alpha        = std::clamp(log.timeAlive, 0.0f, 1.0f);
-        ImColor finalColor = HUDUtils::fadeColor(log.color, alpha);
+        ImColor finalColor = ImGuiUtils::fadeColor(log.color, alpha);
 
         float x = m_pos.x;
         if (rightAlign) {
@@ -79,7 +81,7 @@ void LogComponent::onRenderContent(ImDrawList* dl) {
         }
 
         ImVec2 linePos = ImVec2(x, m_pos.y + yOffset);
-        HUDUtils::drawText(dl, log.text, linePos, finalColor, true);
+        RenderUtils::renderText(dl, linePos, log.text, finalColor, true);
 
         yOffset += lineHeight;
     };

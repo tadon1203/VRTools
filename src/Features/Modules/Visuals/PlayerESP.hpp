@@ -1,7 +1,7 @@
 #pragma once
 
+#include "ESPDef.hpp"
 #include "Features/IFeature.hpp"
-#include "VisualsUtils.hpp"
 
 class PlayerESP : public IFeature {
 public:
@@ -11,11 +11,11 @@ public:
     void onMenuRender() override;
 
 private:
-    void renderStyleEditor(const char* label, VisualsUtils::ESPStyle& style, bool isText = false);
+    void renderStyleEditor(const char* label, ESPStyle& style, bool isText = false);
 
-    VisualsUtils::ESPStyle m_box2DStyle;
-    VisualsUtils::ESPStyle m_box3DStyle;
-    VisualsUtils::ESPStyle m_skeletonStyle;
-    VisualsUtils::ESPStyle m_nameStyle;
-    VisualsUtils::ESPStyle m_distanceStyle;
+    ESPStyle m_box2DStyle;
+    ESPStyle m_box3DStyle;
+    ESPStyle m_skeletonStyle;
+    ESPStyle m_nameStyle;
+    ESPStyle m_distanceStyle;
 };
