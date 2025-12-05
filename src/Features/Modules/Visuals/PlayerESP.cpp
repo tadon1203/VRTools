@@ -1,5 +1,7 @@
 #include "PlayerESP.hpp"
 
+#include <algorithm>
+
 #include <fmt/format.h>
 #include <imgui.h>
 
@@ -9,6 +11,7 @@
 
 PlayerESP::PlayerESP()
     : IFeature(FeatureCategory::Visuals, "Player ESP") {
+    m_renderOrder = { Element::Box2D, Element::Box3D, Element::Skeleton, Element::Name, Element::Distance };
 
     m_box2DStyle.enabled   = true;
     m_box2DStyle.colorMode = ColorMode::Rank;
@@ -52,17 +55,8 @@ void PlayerESP::onRender() {
 
         PlayerESPObject obj = makePlayerESPObject(p);
 
-        ESPUtils::renderBox2D(dl, obj, obj.applyStyle(m_box2DStyle));
-        ESPUtils::renderBox3D(dl, obj, obj.applyStyle(m_box3DStyle));
-        ESPUtils::renderSkeleton(dl, obj, obj.applyStyle(m_skeletonStyle));
-
-        if (m_nameStyle.enabled) {
-            ESPUtils::renderText(dl, obj, obj.name, obj.applyStyle(m_nameStyle), TextAnchor::Top);
-        }
-
-        if (m_distanceStyle.enabled) {
-            std::string distStr = fmt::format("[{:.0f}m]", obj.distance);
-            ESPUtils::renderText(dl, obj, distStr, obj.applyStyle(m_distanceStyle), TextAnchor::Bottom);
+        for (Element element : m_renderOrder) {
+            renderElement(dl, obj, element);
         }
     }
 }
@@ -89,7 +83,102 @@ void PlayerESP::onMenuRender() {
             renderStyleEditor("##Dist", m_distanceStyle, true);
             ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem("Order")) {
+            renderOrderEditor();
+            ImGui::EndTabItem();
+        }
         ImGui::EndTabBar();
+    }
+}
+
+static const char* elementLabel(PlayerESP::Element element) {
+    switch (element) {
+    case PlayerESP::Element::Box2D:
+        return "2D Box";
+    case PlayerESP::Element::Box3D:
+        return "3D Box";
+    case PlayerESP::Element::Skeleton:
+        return "Skeleton";
+    case PlayerESP::Element::Name:
+        return "Name";
+    case PlayerESP::Element::Distance:
+        return "Distance";
+    default:
+        return "Unknown";
+    }
+}
+
+void PlayerESP::renderElement(ImDrawList* dl, const PlayerESPObject& obj, Element element) {
+    switch (element) {
+    case Element::Box2D:
+        if (m_box2DStyle.enabled) {
+            ESPUtils::renderBox2D(dl, obj, obj.applyStyle(m_box2DStyle));
+        }
+        break;
+    case Element::Box3D:
+        if (m_box3DStyle.enabled) {
+            ESPUtils::renderBox3D(dl, obj, obj.applyStyle(m_box3DStyle));
+        }
+        break;
+    case Element::Skeleton:
+        if (m_skeletonStyle.enabled) {
+            ESPUtils::renderSkeleton(dl, obj, obj.applyStyle(m_skeletonStyle));
+        }
+        break;
+    case Element::Name:
+        if (m_nameStyle.enabled) {
+            ESPUtils::renderText(dl, obj, obj.name, obj.applyStyle(m_nameStyle), TextAnchor::Top);
+        }
+        break;
+    case Element::Distance:
+        if (m_distanceStyle.enabled) {
+            std::string distStr = fmt::format("[{:.0f}m]", obj.distance);
+            ESPUtils::renderText(dl, obj, distStr, obj.applyStyle(m_distanceStyle), TextAnchor::Bottom);
+        }
+        break;
+    }
+}
+
+void PlayerESP::renderOrderEditor() {
+    ImGui::TextDisabled("Drag and drop to reorder (Top = Behind, Bottom = Front)");
+
+    ImGui::Separator();
+
+    for (size_t n = 0; n < m_renderOrder.size(); n++) {
+        Element item         = m_renderOrder[n];
+        const char* itemName = elementLabel(item);
+
+        ImGui::PushID(static_cast<int>(n));
+
+        ImGui::Selectable(itemName, false, ImGuiSelectableFlags_AllowOverlap);
+
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover)) {
+            ImGui::SetDragDropPayload("ESP_RENDER_ORDER", &n, sizeof(size_t));
+
+            ImGui::Text("Move %s", itemName);
+            ImGui::EndDragDropSource();
+        }
+
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ESP_RENDER_ORDER")) {
+                size_t payload_n = *(const size_t*) payload->Data;
+
+                if (payload_n != n) {
+                    Element payload_item = m_renderOrder[payload_n];
+
+                    if (payload_n < n) {
+                        std::rotate(m_renderOrder.begin() + payload_n, m_renderOrder.begin() + payload_n + 1,
+                            m_renderOrder.begin() + n + 1);
+                    } else {
+                        std::rotate(m_renderOrder.begin() + n, m_renderOrder.begin() + payload_n,
+                            m_renderOrder.begin() + payload_n + 1);
+                    }
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
+
+        ImGui::PopID();
     }
 }
 

@@ -168,6 +168,8 @@ namespace ESPUtils {
 
         ImU32 col = style.getColor().toU32();
 
+        ImGui::PushFont(nullptr, fSize);
+
         if (style.textOutline) {
             ImU32 black = ImColor(0, 0, 0, 255);
             dl->AddText(font, fSize, { pos.x - 1, pos.y }, black, text.c_str());
