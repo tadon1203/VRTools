@@ -165,8 +165,8 @@ LONG WINAPI CrashHandler::unhandledExceptionHandler(EXCEPTION_POINTERS* pExcepti
     report += fmt::format("Version: {}\n", Version::PROJECT_VERSION);
     report += fmt::format("Exception Code: 0x{:08X} ({})\n", pExceptionInfo->ExceptionRecord->ExceptionCode,
         getExceptionCodeString(pExceptionInfo->ExceptionRecord->ExceptionCode));
-    report +=
-        fmt::format("Exception Address: 0x{:016X}\n", (uintptr_t) pExceptionInfo->ExceptionRecord->ExceptionAddress);
+    report += fmt::format("Exception Address: 0x{:016X}\n",
+        reinterpret_cast<uintptr_t>(pExceptionInfo->ExceptionRecord->ExceptionAddress));
 
     if (pExceptionInfo->ContextRecord) {
         auto& ctx = *pExceptionInfo->ContextRecord;
