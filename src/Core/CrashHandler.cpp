@@ -20,9 +20,8 @@ CrashHandler& CrashHandler::instance() {
 }
 
 void CrashHandler::initialize() {
-    // Register our exception handler
     SetUnhandledExceptionFilter(unhandledExceptionHandler);
-    Logger::instance().info("CrashHandler initialized (SetUnhandledExceptionFilter).");
+    Logger::instance().info("CrashHandler initialized.");
 }
 
 const char* CrashHandler::getExceptionCodeString(DWORD code) {
@@ -101,34 +100,39 @@ void CrashHandler::generateStackTrace(PCONTEXT context, std::string& report) {
             break;
         }
         if (frameCount++ > 50) {
-            break; // Limit recursion
+            break;
         }
 
-        // Resolve Symbol
+        DWORD64 pcAddress = stackFrame.AddrPC.Offset;
+
         char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
-        PSYMBOL_INFO pSymbol  = (PSYMBOL_INFO) buffer;
+        auto pSymbol          = reinterpret_cast<PSYMBOL_INFO>(buffer);
         pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
         pSymbol->MaxNameLen   = MAX_SYM_NAME;
 
         DWORD64 displacement     = 0;
-        std::string functionName = "<Unknown Function>";
+        std::string functionInfo = "<Unknown Function>";
 
-        if (SymFromAddr(process, stackFrame.AddrPC.Offset, &displacement, pSymbol)) {
-            functionName = pSymbol->Name;
+        IMAGEHLP_MODULE64 moduleInfo = {};
+        moduleInfo.SizeOfStruct      = sizeof(IMAGEHLP_MODULE64);
+
+        if (SymFromAddr(process, pcAddress, &displacement, pSymbol)) {
+            functionInfo = pSymbol->Name;
+        } else if (SymGetModuleInfo64(process, pcAddress, &moduleInfo)) {
+            DWORD64 relativeAddr = pcAddress - moduleInfo.BaseOfImage;
+            functionInfo         = fmt::format("{} + 0x{:X}", moduleInfo.ModuleName, relativeAddr);
         }
 
-        // Resolve Line Number
         IMAGEHLP_LINE64 lineInfo = {};
         lineInfo.SizeOfStruct    = sizeof(IMAGEHLP_LINE64);
         DWORD displacementLine   = 0;
-        std::string lineStr      = "";
+        std::string lineStr;
 
-        if (SymGetLineFromAddr64(process, stackFrame.AddrPC.Offset, &displacementLine, &lineInfo)) {
+        if (SymGetLineFromAddr64(process, pcAddress, &displacementLine, &lineInfo)) {
             lineStr = fmt::format(" [{}:{}]", fs::path(lineInfo.FileName).filename().string(), lineInfo.LineNumber);
         }
 
-        report +=
-            fmt::format("{:02} | 0x{:016X} | {}{}\n", frameCount - 1, stackFrame.AddrPC.Offset, functionName, lineStr);
+        report += fmt::format("{:02} | 0x{:016X} | {}{}\n", frameCount - 1, pcAddress, functionInfo, lineStr);
     }
 
     SymCleanup(process);
