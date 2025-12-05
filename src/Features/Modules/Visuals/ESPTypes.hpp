@@ -47,10 +47,12 @@ struct ESPStyle {
 };
 
 struct ESPObject {
-    ImVec2 rectMin;
-    ImVec2 rectMax;
+    virtual ~ESPObject() = default;
 
-    std::array<ImVec2, 8> corners3d;
+    ImVec2 rectMin{};
+    ImVec2 rectMax{};
+
+    std::array<ImVec2, 8> corners3d{};
     bool is3dValid = false;
 
     std::vector<std::pair<ImVec2, ImVec2>> bones;

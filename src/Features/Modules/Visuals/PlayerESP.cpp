@@ -3,9 +3,9 @@
 #include <fmt/format.h>
 #include <imgui.h>
 
-#include "ESPUtils.hpp" // Use the new ESP specific utils
+#include "ESPUtils.hpp"
+#include "PlayerESPObject.hpp"
 #include "SDK/Game/PlayerManager.hpp"
-#include "SDK/Game/PlayerRank.hpp"
 
 PlayerESP::PlayerESP()
     : IFeature(FeatureCategory::Visuals, "Player ESP") {
@@ -50,32 +50,19 @@ void PlayerESP::onRender() {
             continue;
         }
 
-        ESPObject obj;
-        obj.rectMin   = p.rectMin;
-        obj.rectMax   = p.rectMax;
-        obj.corners3d = p.corners3d;
-        obj.is3dValid = true;
-        obj.bones     = p.bones;
-        obj.distance  = p.distance;
+        PlayerESPObject obj = makePlayerESPObject(p);
 
-        auto applyRank = [&](ESPStyle style) -> ESPStyle {
-            if (style.colorMode == ColorMode::Rank) {
-                style.primaryColor = VRC::getRankColor(p.rank);
-            }
-            return style;
-        };
-
-        ESPUtils::renderBox2D(dl, obj, applyRank(m_box2DStyle));
-        ESPUtils::renderBox3D(dl, obj, applyRank(m_box3DStyle));
-        ESPUtils::renderSkeleton(dl, obj, applyRank(m_skeletonStyle));
+        ESPUtils::renderBox2D(dl, obj, obj.applyStyle(m_box2DStyle));
+        ESPUtils::renderBox3D(dl, obj, obj.applyStyle(m_box3DStyle));
+        ESPUtils::renderSkeleton(dl, obj, obj.applyStyle(m_skeletonStyle));
 
         if (m_nameStyle.enabled) {
-            ESPUtils::renderText(dl, obj, p.name, applyRank(m_nameStyle), TextAnchor::Top);
+            ESPUtils::renderText(dl, obj, obj.name, obj.applyStyle(m_nameStyle), TextAnchor::Top);
         }
 
         if (m_distanceStyle.enabled) {
-            std::string distStr = fmt::format("[{:.0f}m]", p.distance);
-            ESPUtils::renderText(dl, obj, distStr, applyRank(m_distanceStyle), TextAnchor::Bottom);
+            std::string distStr = fmt::format("[{:.0f}m]", obj.distance);
+            ESPUtils::renderText(dl, obj, distStr, obj.applyStyle(m_distanceStyle), TextAnchor::Bottom);
         }
     }
 }

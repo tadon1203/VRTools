@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ESPDef.hpp"
+#include "ESPTypes.hpp"
 #include "Features/IFeature.hpp"
 
 class PlayerESP : public IFeature {

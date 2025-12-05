@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 
 #include "ColorUtils.hpp"
-#include "Features/Modules/Visuals/ESPDef.hpp"
+#include "Features/Modules/Visuals/ESPTypes.hpp"
 #include "HUD/HUDDef.hpp"
 
 // ImVec2

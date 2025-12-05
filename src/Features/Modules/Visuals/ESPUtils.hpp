@@ -4,7 +4,7 @@
 
 #include <imgui.h>
 
-#include "ESPDef.hpp"
+#include "ESPTypes.hpp"
 
 namespace ESPUtils {
 
