@@ -2,6 +2,7 @@
 
 #include "CrashHandler.hpp"
 #include "Features/FeatureManager.hpp"
+#include "Features/Modules/Player/Flight.hpp"
 #include "Features/Modules/Visuals/PlayerESP.hpp"
 #include "HUD/Components/LogComponent.hpp"
 #include "HUD/HUDManager.hpp"
@@ -48,6 +49,7 @@ void Core::initialize() {
         GameHooks::initialize();
 
         auto& fm = FeatureManager::instance();
+        fm.registerFeature<Flight>();
         fm.registerFeature<PlayerESP>();
         fm.initializeAll();
 

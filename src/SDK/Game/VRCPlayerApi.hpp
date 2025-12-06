@@ -5,6 +5,7 @@
 #include "SDK/Unity/GameObject.hpp"
 #include "SDK/Unity/HumanBodyBones.hpp"
 #include "SDK/Unity/Transform.hpp"
+#include "SDK/Unity/Vector3.hpp"
 
 namespace VRC {
     class VRCPlayerApi : public Il2CppObject {
@@ -24,5 +25,7 @@ namespace VRC {
         UnityEngine::Transform* getBoneTransform(UnityEngine::HumanBodyBones bone) {
             return reinterpret_cast<UnityEngine::Transform*>(this->call<Il2CppObject*>("GetBoneTransform", bone));
         }
+
+        void setVelocity(UnityEngine::Vector3 velocity) { this->call("SetVelocity", velocity); }
     };
 }

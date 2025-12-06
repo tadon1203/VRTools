@@ -53,13 +53,14 @@ void PlayerManager::update() {
 
         currentIds.insert(api);
 
-        if (m_playerMap.find(api) == m_playerMap.end()) {
-            PlayerEntry entry;
-            entry.api              = api;
-            entry.drawData.isLocal = api->isLocal;
-            entry.drawData.name    = api->displayName ? api->displayName->toString() : "Unknown";
-            entry.drawData.bones.reserve(60);
-            m_playerMap[api] = std::move(entry);
+        auto [it, inserted] = m_playerMap.try_emplace(api);
+        if (inserted) {
+            DrawPlayer& player = it->second;
+            player.isLocal     = api->isLocal;
+            player.name        = api->displayName ? api->displayName->toString() : "Unknown";
+            player.userID      = std::to_string(api->playerId);
+            player.rank        = VRC::PlayerRank::Visitor;
+            player.bones.reserve(60);
         }
     }
 
@@ -75,47 +76,47 @@ void PlayerManager::update() {
     std::vector<DrawPlayer> tempRenderList;
     tempRenderList.reserve(m_playerMap.size());
 
-    for (auto& [api, entry] : m_playerMap) {
+    for (auto& [api, player] : m_playerMap) {
         // Skip local player for rendering data
-        if (entry.drawData.isLocal) {
+        if (player.isLocal) {
             continue;
         }
 
-        updatePlayer(entry, cam, localPos);
-        tempRenderList.push_back(entry.drawData);
+        updatePlayer(player, api, cam, localPos);
+        tempRenderList.push_back(player);
     }
 
     std::lock_guard lock(m_mutex);
     m_renderList = std::move(tempRenderList);
 }
 
-void PlayerManager::updatePlayer(PlayerEntry& entry, Camera* cam, const Vector3& localPos) {
-    if (!entry.api || !entry.api->gameObject) {
-        entry.drawData.isVisible = false;
+void PlayerManager::updatePlayer(DrawPlayer& player, VRC::VRCPlayerApi* api, Camera* cam, const Vector3& localPos) {
+    if (!api || !api->gameObject) {
+        player.isVisible = false;
         return;
     }
 
-    auto* tr = entry.api->gameObject->getTransform();
+    auto* tr = api->gameObject->getTransform();
     if (!tr) {
         return;
     }
 
-    Vector3 pos             = tr->get_position();
-    entry.drawData.distance = pos.distance(localPos);
+    Vector3 pos     = tr->get_position();
+    player.distance = pos.distance(localPos);
 
-    resolveRank(entry);
+    resolveRank(player, api);
 
-    generateBounds(entry, cam);
+    generateBounds(player, api, cam);
 
-    generateBones(entry, cam);
+    generateBones(player, api, cam);
 }
 
-void PlayerManager::resolveRank(PlayerEntry& entry) {
-    if (entry.rankResolved && entry.cachedRank != VRC::PlayerRank::Visitor) {
+void PlayerManager::resolveRank(DrawPlayer& player, VRC::VRCPlayerApi* api) {
+    if (player.rankResolved && player.rank != VRC::PlayerRank::Visitor) {
         return;
     }
 
-    auto* vrcPlayer = VRC::VRC_Player::get(entry.api);
+    auto* vrcPlayer = VRC::VRC_Player::get(api);
     if (!vrcPlayer) {
         return;
     }
@@ -125,8 +126,8 @@ void PlayerManager::resolveRank(PlayerEntry& entry) {
         return;
     }
 
-    auto tags        = user->getTags();
-    entry.cachedRank = VRC::PlayerRank::Visitor;
+    auto tags   = user->getTags();
+    player.rank = VRC::PlayerRank::Visitor;
 
     bool isModerator     = false;
     bool isTroll         = false;
@@ -144,31 +145,29 @@ void PlayerManager::resolveRank(PlayerEntry& entry) {
         }
 
         if (t == "system_trust_veteran") {
-            entry.cachedRank = VRC::PlayerRank::Trusted;
+            player.rank = VRC::PlayerRank::Trusted;
         } else if (t == "system_trust_trusted") {
-            entry.cachedRank = VRC::PlayerRank::Known;
+            player.rank = VRC::PlayerRank::Known;
         } else if (t == "system_trust_known") {
-            entry.cachedRank = VRC::PlayerRank::User;
+            player.rank = VRC::PlayerRank::User;
         } else if (t == "system_trust_basic") {
-            entry.cachedRank = VRC::PlayerRank::NewUser;
+            player.rank = VRC::PlayerRank::NewUser;
         }
     }
 
     if (isModerator) {
-        entry.cachedRank = VRC::PlayerRank::Moderator;
+        player.rank = VRC::PlayerRank::Moderator;
     } else if (isTroll) {
-        entry.cachedRank = VRC::PlayerRank::Troll;
+        player.rank = VRC::PlayerRank::Troll;
     } else if (isProbableTroll) {
-        entry.cachedRank = VRC::PlayerRank::ProbableTroll;
+        player.rank = VRC::PlayerRank::ProbableTroll;
     }
 
-    entry.rankResolved  = true;
-    entry.drawData.rank = entry.cachedRank;
+    player.rankResolved = true;
 }
 
-void PlayerManager::generateBounds(PlayerEntry& entry, Camera* cam) {
-    auto& dp = entry.drawData;
-    auto* p  = entry.api;
+void PlayerManager::generateBounds(DrawPlayer& dp, VRC::VRCPlayerApi* api, Camera* cam) {
+    auto* p = api;
 
     auto* head  = p->getBoneTransform(HumanBodyBones::Head);
     auto* footL = p->getBoneTransform(HumanBodyBones::LeftFoot);
@@ -235,8 +234,7 @@ void PlayerManager::generateBounds(PlayerEntry& entry, Camera* cam) {
     }
 }
 
-void PlayerManager::generateBones(PlayerEntry& entry, Camera* cam) {
-    auto& dp = entry.drawData;
+void PlayerManager::generateBones(DrawPlayer& dp, VRC::VRCPlayerApi* api, Camera* cam) {
     dp.bones.clear();
 
     static const std::pair<HumanBodyBones, HumanBodyBones> bonePairs[] = {
@@ -260,7 +258,7 @@ void PlayerManager::generateBones(PlayerEntry& entry, Camera* cam) {
         { HumanBodyBones::RightLowerLeg, HumanBodyBones::RightFoot },
     };
 
-    auto* p = entry.api;
+    auto* p = api;
 
     for (const auto& pair : bonePairs) {
         auto* t1 = p->getBoneTransform(pair.first);

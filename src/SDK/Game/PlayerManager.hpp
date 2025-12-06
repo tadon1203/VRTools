@@ -20,6 +20,7 @@ struct DrawPlayer {
     bool isVisible;
     bool isLocal;
     VRC::PlayerRank rank;
+    bool rankResolved = false;
 
     ImVec2 rectMin;
     ImVec2 rectMax;
@@ -39,20 +40,13 @@ private:
     PlayerManager()  = default;
     ~PlayerManager() = default;
 
-    struct PlayerEntry {
-        VRC::VRCPlayerApi* api     = nullptr;
-        VRC::PlayerRank cachedRank = VRC::PlayerRank::Visitor;
-        bool rankResolved          = false;
+    void updatePlayer(
+        DrawPlayer& player, VRC::VRCPlayerApi* api, UnityEngine::Camera* cam, const UnityEngine::Vector3& localPos);
+    void resolveRank(DrawPlayer& player, VRC::VRCPlayerApi* api);
+    void generateBounds(DrawPlayer& player, VRC::VRCPlayerApi* api, UnityEngine::Camera* cam);
+    void generateBones(DrawPlayer& player, VRC::VRCPlayerApi* api, UnityEngine::Camera* cam);
 
-        DrawPlayer drawData;
-    };
-
-    void updatePlayer(PlayerEntry& entry, UnityEngine::Camera* cam, const UnityEngine::Vector3& localPos);
-    void resolveRank(PlayerEntry& entry);
-    void generateBounds(PlayerEntry& entry, UnityEngine::Camera* cam);
-    void generateBones(PlayerEntry& entry, UnityEngine::Camera* cam);
-
-    std::unordered_map<VRC::VRCPlayerApi*, PlayerEntry> m_playerMap;
+    std::unordered_map<VRC::VRCPlayerApi*, DrawPlayer> m_playerMap;
 
     std::vector<DrawPlayer> m_renderList;
     std::mutex m_mutex;
