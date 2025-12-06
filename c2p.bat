@@ -1,0 +1,1 @@
+code2prompt . --clipboard --exclude="./cmake-build-debug/*" --exclude="./out/*" --exclude="./extern/*" --exclude="./src/UI/Fonts/*"

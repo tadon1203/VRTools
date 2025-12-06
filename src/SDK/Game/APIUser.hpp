@@ -1,4 +1,5 @@
 #pragma once
+
 #include "SDK/Il2Cpp/Binding.hpp"
 #include "SDK/Il2Cpp/Structs.hpp"
 

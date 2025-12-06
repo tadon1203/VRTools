@@ -1,4 +1,5 @@
 #pragma once
+
 #include "VRCPlayerApi.hpp"
 
 namespace VRC {

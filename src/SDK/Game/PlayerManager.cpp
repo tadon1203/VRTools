@@ -36,7 +36,7 @@ void PlayerManager::update() {
         if (lp->gameObject) {
             auto* t = lp->gameObject->getTransform();
             if (t) {
-                localPos = t->get_position();
+                localPos = t->getPosition();
             }
         }
     }
@@ -101,7 +101,7 @@ void PlayerManager::updatePlayer(DrawPlayer& player, VRC::VRCPlayerApi* api, Cam
         return;
     }
 
-    Vector3 pos     = tr->get_position();
+    Vector3 pos     = tr->getPosition();
     player.distance = pos.distance(localPos);
 
     resolveRank(player, api);
@@ -175,7 +175,7 @@ void PlayerManager::generateBounds(DrawPlayer& dp, VRC::VRCPlayerApi* api, Camer
 
     // non humanoid fallback
     if (!head) {
-        Vector3 pos = p->gameObject->getTransform()->get_position();
+        Vector3 pos = p->gameObject->getTransform()->getPosition();
         Vector3 s   = cam->worldToScreenPoint(pos);
         if (s.z > 0) {
             ImVec2 scr   = Utils::Math::unityToImGui(s);
@@ -189,11 +189,11 @@ void PlayerManager::generateBounds(DrawPlayer& dp, VRC::VRCPlayerApi* api, Camer
     }
 
     // Calculate center and height based on humanoid bones
-    Vector3 headPos = head->get_position();
+    Vector3 headPos = head->getPosition();
     Vector3 footPos = (footL && footR)
-                        ? (footL->get_position() + footR->get_position()) / 2.0f
-                        : (footL ? footL->get_position()
-                                 : (footR ? footR->get_position() : p->gameObject->getTransform()->get_position()));
+                        ? (footL->getPosition() + footR->getPosition()) / 2.0f
+                        : (footL ? footL->getPosition()
+                                 : (footR ? footR->getPosition() : p->gameObject->getTransform()->getPosition()));
 
     float height   = std::abs(headPos.y - footPos.y);
     Vector3 center = (headPos + footPos) / 2.0f;
@@ -268,8 +268,8 @@ void PlayerManager::generateBones(DrawPlayer& dp, VRC::VRCPlayerApi* api, Camera
             continue;
         }
 
-        Vector3 s1 = cam->worldToScreenPoint(t1->get_position());
-        Vector3 s2 = cam->worldToScreenPoint(t2->get_position());
+        Vector3 s1 = cam->worldToScreenPoint(t1->getPosition());
+        Vector3 s2 = cam->worldToScreenPoint(t2->getPosition());
 
         if (s1.z > 0.1f && s2.z > 0.1f) {
             dp.bones.emplace_back(Utils::Math::unityToImGui(s1), Utils::Math::unityToImGui(s2));

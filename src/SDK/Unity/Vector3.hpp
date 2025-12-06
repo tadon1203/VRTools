@@ -30,5 +30,13 @@ namespace UnityEngine {
         float magnitude() const { return std::sqrt(x * x + y * y + z * z); }
 
         float distance(const Vector3& other) const { return (*this - other).magnitude(); }
+
+        Vector3 normalized() const {
+            float m = magnitude();
+            if (m > 1e-5f) {
+                return *this / m;
+            }
+            return Zero();
+        }
     };
 }

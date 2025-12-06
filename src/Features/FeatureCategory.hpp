@@ -33,7 +33,7 @@ inline const char* getCategoryDescription(FeatureCategory category) {
     case FeatureCategory::Visuals:
         return "Visual modifications and information display features.";
     case FeatureCategory::Player:
-        return "Features that directly affect your player or other players (e.g., Fly, Speedhack).";
+        return "Features that directly affect your player or other players (e.g., Flight, Speed).";
     case FeatureCategory::World:
         return "Features that affect the game world and environment.";
     case FeatureCategory::Exploits:
